@@ -64,15 +64,11 @@ static void rcu_idle_enter_common(long long oldval)
 		return;
 	}
 	RCU_TRACE(trace_rcu_dyntick("Start", oldval, rcu_dynticks_nesting));
-	if (!is_idle_task(current)) {
-		struct task_struct *idle = idle_task(smp_processor_id());
-
+	if (!idle_cpu(smp_processor_id())) {
+		WARN_ON_ONCE(1);	/* must be idle task! */
 		RCU_TRACE(trace_rcu_dyntick("Error on entry: not idle task",
 					    oldval, rcu_dynticks_nesting));
 		ftrace_dump(DUMP_ALL);
-		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
-			  current->pid, current->comm,
-			  idle->pid, idle->comm); /* must be idle task! */
 	}
 	rcu_sched_qs(0); /* implies rcu_bh_qsctr_inc(0) */
 }
@@ -118,15 +114,11 @@ static void rcu_idle_exit_common(long long oldval)
 		return;
 	}
 	RCU_TRACE(trace_rcu_dyntick("End", oldval, rcu_dynticks_nesting));
-	if (!is_idle_task(current)) {
-		struct task_struct *idle = idle_task(smp_processor_id());
-
+	if (!idle_cpu(smp_processor_id())) {
+		WARN_ON_ONCE(1);	/* must be idle task! */
 		RCU_TRACE(trace_rcu_dyntick("Error on exit: not idle task",
 			  oldval, rcu_dynticks_nesting));
 		ftrace_dump(DUMP_ALL);
-		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
-			  current->pid, current->comm,
-			  idle->pid, idle->comm); /* must be idle task! */
 	}
 }
 
@@ -259,11 +251,7 @@ static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp)
 	/* If no RCU callbacks ready to invoke, just return. */
 	if (&rcp->rcucblist == rcp->donetail) {
 		RCU_TRACE(trace_rcu_batch_start(rcp->name, 0, -1));
-		RCU_TRACE(trace_rcu_batch_end(rcp->name, 0,
-					      ACCESS_ONCE(rcp->rcucblist),
-					      need_resched(),
-					      is_idle_task(current),
-					      rcu_is_callbacks_kthread()));
+		RCU_TRACE(trace_rcu_batch_end(rcp->name, 0));
 		return;
 	}
 
@@ -292,9 +280,7 @@ static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp)
 		RCU_TRACE(cb_count++);
 	}
 	RCU_TRACE(rcu_trace_sub_qlen(rcp, cb_count));
-	RCU_TRACE(trace_rcu_batch_end(rcp->name, cb_count, 0, need_resched(),
-				      is_idle_task(current),
-				      rcu_is_callbacks_kthread()));
+	RCU_TRACE(trace_rcu_batch_end(rcp->name, cb_count));
 }
 
 static void rcu_process_callbacks(struct softirq_action *unused)
