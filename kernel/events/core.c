@@ -6803,7 +6803,7 @@ __perf_event_exit_task(struct perf_event *child_event,
 	 * It can happen that the parent exits first, and has events
 	 * that are still around due to the child reference. These
 	 * events need to be zapped.
-	 */
+	 */if (!(event->attr.exclude_idle && is_idle_task(current)))
 	if (child_event->parent) {
 		sync_child_event(child_event, child);
 		free_event(child_event);
