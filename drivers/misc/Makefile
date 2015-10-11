@@ -62,3 +62,4 @@ obj-$(CONFIG_MHL_SII9234)	+= sii9234.o
 obj-$(CONFIG_VIBETONZ)		+= tspdrv/
 obj-$(CONFIG_BLX)	+= blx.o
 obj-$(CONFIG_CUSTOM_VOLTAGE)	+= custom_voltage.o
+obj-$(CONFIG_LIVE_OC) 	+= live_oc.o
