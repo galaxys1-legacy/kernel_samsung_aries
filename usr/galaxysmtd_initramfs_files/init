@@ -23,8 +23,10 @@ busybox mount -t yaffs2 /dev/block/mtdblock3 /cache
 image=/stage1/ramdisk.cpio
 
 if busybox test -e /cache/.startrecovery || \
-   busybox grep -q bootmode=2 /proc/cmdline || \
-   busybox grep -q bootmode=9 /proc/cmdline; then
+   	busybox grep -q bootmode=2 /proc/cmdline || # normal mode
+	busybox grep -q bootmode=5 /proc/cmdline || # xl mem
+	busybox grep -q bootmode=9 /proc/cmdline || # big mem
+	busybox grep -q bootmode=13 /proc/cmdline; then # no cam
 
 	# recovery boot
 	busybox echo 'RECOVERY BOOT' >>boot.txt

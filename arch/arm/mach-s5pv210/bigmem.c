@@ -1,5 +1,5 @@
 /*
- * Copyright (C)  20012 stratosk <stratosk@semaphore.gr>
+ * Copyright (C)  2012 stratosk <stratosk@semaphore.gr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -10,22 +10,53 @@
 #include <linux/kobject.h>
 #include <linux/sysfs.h>
 
+extern bool nocam;
 extern bool bigmem;
+extern bool xlmem;
+static int  mem = 0;
 
 /* sysfs interface */
 static ssize_t enable_show(struct kobject *kobj,
         struct kobj_attribute *attr, char *buf)
 {
-    return sprintf(buf, "%d\n", bigmem?1:0);
+    return sprintf(buf, "%d\n", mem);
 }
 
 static ssize_t enable_store(struct kobject *kobj, struct kobj_attribute *attr,
         const char *buf, size_t count)
 {
     int input;
-    sscanf(buf, "%du", &input);
-    bigmem = input;
-    return count;
+	sscanf(buf, "%du", &input);
+	    if (input == 1) 
+		{
+		mem = input;
+		xlmem = true;
+		bigmem = false;
+		nocam = false;
+		}
+	    else if (input == 2) 
+		{
+		mem = input;
+		xlmem = false;
+		bigmem = true;
+		nocam = false;
+		}
+	    else if (input == 3) 
+		{
+		mem = input;
+		xlmem = false;
+		bigmem = false;
+		nocam = true;
+		}
+	    else
+		{
+		mem = 0;
+		xlmem = false;
+		bigmem = false;
+		nocam = false;
+		}
+
+		return count;
 }
 
 static struct kobj_attribute enable_attribute =
