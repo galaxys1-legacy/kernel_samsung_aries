@@ -63,3 +63,5 @@ obj-$(CONFIG_VIBETONZ)		+= tspdrv/
 obj-$(CONFIG_BLX)	+= blx.o
 obj-$(CONFIG_CUSTOM_VOLTAGE)	+= custom_voltage.o
 obj-$(CONFIG_LIVE_OC) 	+= live_oc.o
+obj-$(CONFIG_TOUCH_WAKE)  += touch_wake.o
+obj-$(CONFIG_GENERIC_BLN)  += bln.o
