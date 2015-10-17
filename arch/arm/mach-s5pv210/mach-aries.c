@@ -153,7 +153,12 @@ static int aries_notifier_call(struct notifier_block *this,
 					unsigned long code, void *_cmd)
 {
 	int mode = REBOOT_MODE_NONE;
-
+	if (nocam)
+		mode = 11;
+	else if (bigmem)
+		mode = 7;
+	else if (xlmem)
+		mode = 3;
 	if ((code == SYS_RESTART) && _cmd) {
 		if (!strcmp((char *)_cmd, "recovery"))
 			if (nocam)
@@ -5412,7 +5417,7 @@ static void __init aries_inject_cmdline(void) {
 	} else {
 		// Only write bootmode when less than 10 to prevent confusion with watchdog
 		// reboot (0xee = 238)
-		if (bootmode < 10) {
+		if (bootmode < 15) {
 			size += sprintf(new_command_line + size, " bootmode=%d", bootmode);
 		}
 		size += sprintf(new_command_line + size, " androidboot.selinux=permissive");
