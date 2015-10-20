@@ -59,7 +59,7 @@
 #include <linux/blx.h>
 #endif
 
-#define POLLING_INTERVAL	1000
+#define POLLING_INTERVAL	6000
 #define ADC_TOTAL_COUNT		10
 #define ADC_DATA_ARR_SIZE	6
 
