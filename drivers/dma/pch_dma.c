@@ -65,6 +65,9 @@
 #define DMA_MASK_CTL0_MODE	0x33333333
 #define DMA_MASK_CTL2_MODE	0x00003333
 
+#define DMA_MASK_CTL0_MODE	0x33333333
+#define DMA_MASK_CTL2_MODE	0x00003333
+
 static unsigned int init_nr_desc_per_channel = 64;
 module_param(init_nr_desc_per_channel, uint, 0644);
 MODULE_PARM_DESC(init_nr_desc_per_channel,

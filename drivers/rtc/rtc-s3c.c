@@ -55,9 +55,33 @@ static enum s3c_cpu_type s3c_rtc_cpu_type;
 
 static DEFINE_SPINLOCK(s3c_rtc_pie_lock);
 
+<<<<<<< HEAD
 static void s3c_rtc_enable(struct device *dev, int en);
 
 static int s3c_rtc_settime(struct device *dev, struct rtc_time *tm);
+=======
+static void s3c_rtc_alarm_clk_enable(bool enable)
+{
+	static DEFINE_SPINLOCK(s3c_rtc_alarm_clk_lock);
+	static bool alarm_clk_enabled;
+	unsigned long irq_flags;
+
+	spin_lock_irqsave(&s3c_rtc_alarm_clk_lock, irq_flags);
+	if (enable) {
+		if (!alarm_clk_enabled) {
+			clk_enable(rtc_clk);
+			alarm_clk_enabled = true;
+		}
+	} else {
+		if (alarm_clk_enabled) {
+			clk_disable(rtc_clk);
+			alarm_clk_enabled = false;
+		}
+	}
+	spin_unlock_irqrestore(&s3c_rtc_alarm_clk_lock, irq_flags);
+}
+
+>>>>>>> v3.1
 /* IRQ Handlers */
 
 static irqreturn_t s3c_rtc_alarmirq(int irq, void *id)
@@ -70,6 +94,12 @@ static irqreturn_t s3c_rtc_alarmirq(int irq, void *id)
 	writeb(S3C2410_INTP_ALM, s3c_rtc_base + S3C2410_INTP);
 
 	clk_disable(rtc_clk);
+<<<<<<< HEAD
+=======
+
+	s3c_rtc_alarm_clk_enable(false);
+
+>>>>>>> v3.1
 	return IRQ_HANDLED;
 }
 
@@ -103,6 +133,11 @@ static int s3c_rtc_setaie(struct device *dev, unsigned int enabled)
 
 	writeb(tmp, s3c_rtc_base + S3C2410_RTCALM);
 	clk_disable(rtc_clk);
+<<<<<<< HEAD
+=======
+
+	s3c_rtc_alarm_clk_enable(enabled);
+>>>>>>> v3.1
 
 	return 0;
 }
@@ -140,7 +175,10 @@ static int s3c_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
 	unsigned int have_retried = 0;
 	void __iomem *base = s3c_rtc_base;
 
+<<<<<<< HEAD
 	s3c_rtc_enable(dev, 1);
+=======
+>>>>>>> v3.1
 	clk_enable(rtc_clk);
  retry_get_time:
 	rtc_tm->tm_sec  = readb(base + S3C2410_RTCSEC);
@@ -167,10 +205,6 @@ static int s3c_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
 	}
 	s3c_rtc_enable(dev, 0);
 
-	pr_debug("read time %04d.%02d.%02d %02d:%02d:%02d\n",
-		 1900 + rtc_tm->tm_year, rtc_tm->tm_mon, rtc_tm->tm_mday,
-		 rtc_tm->tm_hour, rtc_tm->tm_min, rtc_tm->tm_sec);
-
 	rtc_tm->tm_sec = bcd2bin(rtc_tm->tm_sec);
 	rtc_tm->tm_min = bcd2bin(rtc_tm->tm_min);
 	rtc_tm->tm_hour = bcd2bin(rtc_tm->tm_hour);
@@ -182,7 +216,14 @@ static int s3c_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
 #else
 	rtc_tm->tm_year = bcd2bin(rtc_tm->tm_year);
 	rtc_tm->tm_year += 100;
+<<<<<<< HEAD
 #endif
+=======
+
+	pr_debug("read time %04d.%02d.%02d %02d:%02d:%02d\n",
+		 1900 + rtc_tm->tm_year, rtc_tm->tm_mon, rtc_tm->tm_mday,
+		 rtc_tm->tm_hour, rtc_tm->tm_min, rtc_tm->tm_sec);
+>>>>>>> v3.1
 
 	rtc_tm->tm_mon -= 1;
 
@@ -235,10 +276,13 @@ static int s3c_rtc_settime(struct device *dev, struct rtc_time *tm)
 	writel(year, base + S3C2410_RTCYEAR);
 #else
 	writeb(bin2bcd(year), base + S3C2410_RTCYEAR);
+<<<<<<< HEAD
 #endif
 	s3c_rtc_enable(dev, 0);
 
 	max8998_rtc_set_time_hack(tm);
+=======
+>>>>>>> v3.1
 	clk_disable(rtc_clk);
 
 	return 0;
@@ -250,8 +294,11 @@ static int s3c_rtc_getalarm(struct device *dev, struct rtc_wkalrm *alrm)
 	void __iomem *base = s3c_rtc_base;
 	unsigned int alm_en;
 
+<<<<<<< HEAD
 	s3c_rtc_enable(dev, 1);
 
+=======
+>>>>>>> v3.1
 	clk_enable(rtc_clk);
 	alm_tm->tm_sec  = readb(base + S3C2410_ALMSEC);
 	alm_tm->tm_min  = readb(base + S3C2410_ALMMIN);
@@ -327,6 +374,7 @@ static int s3c_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
 	void __iomem *base = s3c_rtc_base;
 	unsigned int alrm_en;
 
+<<<<<<< HEAD
 #if defined(CONFIG_CPU_S5PV210)
 	int year = tm->tm_year;
 	int year100;
@@ -334,15 +382,20 @@ static int s3c_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
 	int year = tm->tm_year - 100;
 #endif
 
+=======
+>>>>>>> v3.1
 	clk_enable(rtc_clk);
 	pr_debug("s3c_rtc_setalarm: %d, %04d.%02d.%02d %02d:%02d:%02d\n",
 		 alrm->enabled,
-		 1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
+		 1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday,
 		 tm->tm_hour, tm->tm_min, tm->tm_sec);
 
+<<<<<<< HEAD
 
 	s3c_rtc_enable(dev, 1);
 
+=======
+>>>>>>> v3.1
 	alrm_en = readb(base + S3C2410_RTCALM) & S3C2410_RTCALM_ALMEN;
 	writeb(0x00, base + S3C2410_RTCALM);
 
@@ -402,15 +455,31 @@ static int s3c_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
 
 static int s3c_rtc_proc(struct device *dev, struct seq_file *seq)
 {
+<<<<<<< HEAD
 	unsigned int ticnt = readw(s3c_rtc_base + S3C2410_TICNT);
 	clk_enable(rtc_clk);
 
 	seq_printf(seq, "periodic_IRQ\t: %s\n",
 		     (ticnt & S3C2410_TICNT_ENABLE) ? "yes" : "no");
+=======
+	unsigned int ticnt;
+
+	clk_enable(rtc_clk);
+	if (s3c_rtc_cpu_type == TYPE_S3C64XX) {
+		ticnt = readw(s3c_rtc_base + S3C2410_RTCCON);
+		ticnt &= S3C64XX_RTCCON_TICEN;
+	} else {
+		ticnt = readb(s3c_rtc_base + S3C2410_TICNT);
+		ticnt &= S3C2410_TICNT_ENABLE;
+	}
+
+	seq_printf(seq, "periodic_IRQ\t: %s\n", ticnt  ? "yes" : "no");
+>>>>>>> v3.1
 	clk_disable(rtc_clk);
 	return 0;
 }
 
+<<<<<<< HEAD
 static int s3c_rtc_open(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
@@ -459,9 +528,9 @@ static void s3c_rtc_release(struct device *dev)
 
 }
 
+=======
+>>>>>>> v3.1
 static const struct rtc_class_ops s3c_rtcops = {
-	.open		= s3c_rtc_open,
-	.release	= s3c_rtc_release,
 	.read_time	= s3c_rtc_gettime,
 	.set_time	= s3c_rtc_settime,
 	.read_alarm	= s3c_rtc_getalarm,
@@ -521,6 +590,9 @@ static int __devexit s3c_rtc_remove(struct platform_device *dev)
 {
 	struct rtc_device *rtc = platform_get_drvdata(dev);
 
+	free_irq(s3c_rtc_alarmno, rtc);
+	free_irq(s3c_rtc_tickno, rtc);
+
 	platform_set_drvdata(dev, NULL);
 	rtc_device_unregister(rtc);
 
@@ -575,8 +647,7 @@ static int __devinit s3c_rtc_probe(struct platform_device *pdev)
 		return -ENOENT;
 	}
 
-	s3c_rtc_mem = request_mem_region(res->start,
-					 res->end-res->start+1,
+	s3c_rtc_mem = request_mem_region(res->start, resource_size(res),
 					 pdev->name);
 
 	if (s3c_rtc_mem == NULL) {
@@ -585,7 +656,7 @@ static int __devinit s3c_rtc_probe(struct platform_device *pdev)
 		goto err_nores;
 	}
 
-	s3c_rtc_base = ioremap(res->start, res->end - res->start + 1);
+	s3c_rtc_base = ioremap(res->start, resource_size(res));
 	if (s3c_rtc_base == NULL) {
 		dev_err(&pdev->dev, "failed ioremap()\n");
 		ret = -EINVAL;
@@ -694,9 +765,34 @@ static int __devinit s3c_rtc_probe(struct platform_device *pdev)
 
 	s3c_rtc_setfreq(&pdev->dev, 1);
 
+<<<<<<< HEAD
+=======
+	ret = request_irq(s3c_rtc_alarmno, s3c_rtc_alarmirq,
+			  IRQF_DISABLED,  "s3c2410-rtc alarm", rtc);
+	if (ret) {
+		dev_err(&pdev->dev, "IRQ%d error %d\n", s3c_rtc_alarmno, ret);
+		goto err_alarm_irq;
+	}
+
+	ret = request_irq(s3c_rtc_tickno, s3c_rtc_tickirq,
+			  IRQF_DISABLED,  "s3c2410-rtc tick", rtc);
+	if (ret) {
+		dev_err(&pdev->dev, "IRQ%d error %d\n", s3c_rtc_tickno, ret);
+		free_irq(s3c_rtc_alarmno, rtc);
+		goto err_tick_irq;
+	}
+
+>>>>>>> v3.1
 	clk_disable(rtc_clk);
 
 	return 0;
+
+ err_tick_irq:
+	free_irq(s3c_rtc_alarmno, rtc);
+
+ err_alarm_irq:
+	platform_set_drvdata(pdev, NULL);
+	rtc_device_unregister(rtc);
 
  err_nortc:
 	clk_disable(rtc_clk);
@@ -720,9 +816,12 @@ static int ticnt_save;
 
 static int s3c_rtc_suspend(struct device *dev)
 {
+<<<<<<< HEAD
 	struct timespec time;
 
 	time.tv_nsec = 0;
+=======
+>>>>>>> v3.1
 	clk_enable(rtc_clk);
 	/* save TICNT for anyone using periodic interrupts */
 	ticnt_save = readl(s3c_rtc_base + S3C2410_TICNT);
@@ -742,7 +841,17 @@ static int s3c_rtc_resume(struct device *dev)
 {
 	struct timespec time;
 
+<<<<<<< HEAD
 	time.tv_nsec = 0;
+=======
+	clk_enable(rtc_clk);
+	s3c_rtc_enable(pdev, 1);
+	writeb(ticnt_save, s3c_rtc_base + S3C2410_TICNT);
+	if (s3c_rtc_cpu_type == TYPE_S3C64XX && ticnt_en_save) {
+		tmp = readw(s3c_rtc_base + S3C2410_RTCCON);
+		writew(tmp | ticnt_en_save, s3c_rtc_base + S3C2410_RTCCON);
+	}
+>>>>>>> v3.1
 
 	clk_enable(rtc_clk);
 	writel(ticnt_save, s3c_rtc_base + S3C2410_TICNT);

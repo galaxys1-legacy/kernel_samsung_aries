@@ -956,6 +956,12 @@ static int xhci_check_args(struct usb_hcd *hcd, struct usb_device *udev,
 	}
 
 	xhci = hcd_to_xhci(hcd);
+<<<<<<< HEAD
+=======
+	if (xhci->xhc_state & XHCI_STATE_HALTED)
+		return -ENODEV;
+
+>>>>>>> v3.1
 	if (check_virt_dev) {
 		if (!udev->slot_id || !xhci->devs
 			|| !xhci->devs[udev->slot_id]) {
@@ -1382,8 +1388,8 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
 	/* If the HC already knows the endpoint is disabled,
 	 * or the HCD has noted it is disabled, ignore this request
 	 */
-	if ((le32_to_cpu(ep_ctx->ep_info) & EP_STATE_MASK) ==
-	    EP_STATE_DISABLED ||
+	if (((ep_ctx->ep_info & cpu_to_le32(EP_STATE_MASK)) ==
+	     cpu_to_le32(EP_STATE_DISABLED)) ||
 	    le32_to_cpu(ctrl_ctx->drop_flags) &
 	    xhci_get_endpoint_flag(&ep->desc)) {
 		xhci_warn(xhci, "xHCI %s called with disabled ep %p\n",
@@ -1800,8 +1806,7 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
 		/* Enqueue pointer can be left pointing to the link TRB,
 		 * we must handle that
 		 */
-		if ((le32_to_cpu(command->command_trb->link.control)
-		     & TRB_TYPE_BITMASK) == TRB_TYPE(TRB_LINK))
+		if (TRB_TYPE_LINK_LE32(command->command_trb->link.control))
 			command->command_trb =
 				xhci->cmd_ring->enq_seg->next->trbs;
 
@@ -2610,8 +2615,7 @@ int xhci_discover_or_reset_device(struct usb_hcd *hcd, struct usb_device *udev)
 	/* Enqueue pointer can be left pointing to the link TRB,
 	 * we must handle that
 	 */
-	if ((le32_to_cpu(reset_device_cmd->command_trb->link.control)
-	     & TRB_TYPE_BITMASK) == TRB_TYPE(TRB_LINK))
+	if (TRB_TYPE_LINK_LE32(reset_device_cmd->command_trb->link.control))
 		reset_device_cmd->command_trb =
 			xhci->cmd_ring->enq_seg->next->trbs;
 

@@ -6,7 +6,7 @@
  * Copyright 2006-2010 Johannes Berg <johannes@sipsolutions.net>
  * Copyright 2008 Michael Wu <flamingice@sourmilk.net>
  * Copyright 2008 Luis Carlos Cobo <luisca@cozybit.com>
- * Copyright 2008 Michael Buesch <mb@bu3sch.de>
+ * Copyright 2008 Michael Buesch <m@bues.ch>
  * Copyright 2008, 2009 Luis R. Rodriguez <lrodriguez@atheros.com>
  * Copyright 2008 Jouni Malinen <jouni.malinen@atheros.com>
  * Copyright 2008 Colin McCabe <colin@cozybit.com>
@@ -247,7 +247,8 @@
  *	passed, all channels allowed for the current regulatory domain
  *	are used.  Extra IEs can also be passed from the userspace by
  *	using the %NL80211_ATTR_IE attribute.
- * @NL80211_CMD_STOP_SCHED_SCAN: stop a scheduled scan
+ * @NL80211_CMD_STOP_SCHED_SCAN: stop a scheduled scan.  Returns -ENOENT
+ *	if scheduled scan is not running.
  * @NL80211_CMD_SCHED_SCAN_RESULTS: indicates that there are scheduled scan
  *	results available.
  * @NL80211_CMD_SCHED_SCAN_STOPPED: indicates that the scheduled scan has
@@ -491,6 +492,7 @@
  *	this command may also be sent by the driver as an MLME event to
  *	inform userspace of the new replay counter.
  *
+<<<<<<< HEAD
  * @NL80211_CMD_PMKSA_CANDIDATE: This is used as an event to inform userspace
  *	of PMKSA caching dandidates.
  *
@@ -520,6 +522,8 @@
  *	OLBC handling in hostapd. Beacons are reported in %NL80211_CMD_FRAME
  *	messages. Note that per PHY only one application may register.
  *
+=======
+>>>>>>> v3.1
  * @NL80211_CMD_MAX: highest used command number
  * @__NL80211_CMD_AFTER_LAST: internal use
  */
@@ -644,6 +648,7 @@ enum nl80211_commands {
 
 	NL80211_CMD_SET_REKEY_OFFLOAD,
 
+<<<<<<< HEAD
 	NL80211_CMD_PMKSA_CANDIDATE,
 
 	NL80211_CMD_TDLS_OPER,
@@ -655,6 +660,8 @@ enum nl80211_commands {
 
 	NL80211_CMD_REGISTER_BEACONS,
 
+=======
+>>>>>>> v3.1
 	/* add new commands above here */
 
 	/* used to define NL80211_CMD_MAX below */
@@ -801,8 +808,11 @@ enum nl80211_commands {
  *	that can be added to a scan request
  * @NL80211_ATTR_MAX_SCHED_SCAN_IE_LEN: maximum length of information
  *	elements that can be added to a scheduled scan request
+<<<<<<< HEAD
  * @NL80211_ATTR_MAX_MATCH_SETS: maximum number of sets that can be
  *	used with @NL80211_ATTR_SCHED_SCAN_MATCH, a wiphy attribute.
+=======
+>>>>>>> v3.1
  *
  * @NL80211_ATTR_SCAN_FREQUENCIES: nested attribute with frequencies (in MHz)
  * @NL80211_ATTR_SCAN_SSIDS: nested attribute with SSIDs, leave out for passive
@@ -1078,6 +1088,7 @@ enum nl80211_commands {
  *	being a list of supported rates as defined by IEEE 802.11 7.3.2.2 but
  *	without the length restriction (at most %NL80211_MAX_SUPP_RATES).
  *
+<<<<<<< HEAD
  * @NL80211_ATTR_HIDDEN_SSID: indicates whether SSID is to be hidden from Beacon
  *	and Probe Response (when response to wildcard Probe Request); see
  *	&enum nl80211_hidden_ssid, represented as a u32
@@ -1129,6 +1140,8 @@ enum nl80211_commands {
  *	with support for the features listed in this attribute, see
  *	&enum nl80211_ap_sme_features.
  *
+=======
+>>>>>>> v3.1
  * @NL80211_ATTR_MAX: highest attribute number currently defined
  * @__NL80211_ATTR_AFTER_LAST: internal use
  */
@@ -1334,6 +1347,7 @@ enum nl80211_attrs {
 
 	NL80211_ATTR_SCAN_SUPP_RATES,
 
+<<<<<<< HEAD
 	NL80211_ATTR_HIDDEN_SSID,
 
 	NL80211_ATTR_IE_PROBE_RESP,
@@ -1359,6 +1373,8 @@ enum nl80211_attrs {
 
 	NL80211_ATTR_DEVICE_AP_SME,
 
+=======
+>>>>>>> v3.1
 	/* add attributes here, update the policy in nl80211.c */
 
 	__NL80211_ATTR_AFTER_LAST,
@@ -2585,6 +2601,7 @@ enum nl80211_rekey_data {
 	MAX_NL80211_REKEY_DATA = NUM_NL80211_REKEY_DATA - 1
 };
 
+<<<<<<< HEAD
 /**
  * enum nl80211_hidden_ssid - values for %NL80211_ATTR_HIDDEN_SSID
  * @NL80211_HIDDEN_SSID_NOT_IN_USE: do not hide SSID (i.e., broadcast it in
@@ -2667,4 +2684,6 @@ enum nl80211_ap_sme_features {
 };
  */
 
+=======
+>>>>>>> v3.1
 #endif /* __LINUX_NL80211_H */

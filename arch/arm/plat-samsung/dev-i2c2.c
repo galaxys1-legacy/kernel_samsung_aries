@@ -48,6 +48,7 @@ struct platform_device s3c_device_i2c2 = {
 	.resource	  = s3c_i2c_resource,
 };
 
+<<<<<<< HEAD
 static struct s3c2410_platform_i2c default_i2c_data2 __initdata = {
 	.flags		= 0,
 	.bus_num	= 2,
@@ -56,20 +57,22 @@ static struct s3c2410_platform_i2c default_i2c_data2 __initdata = {
 	.sda_delay	= S3C2410_IICLC_SDA_DELAY5 | S3C2410_IICLC_FILTER_ON,
 };
 
+=======
+>>>>>>> v3.1
 void __init s3c_i2c2_set_platdata(struct s3c2410_platform_i2c *pd)
 {
 	struct s3c2410_platform_i2c *npd;
 
-	if (!pd)
-		pd = &default_i2c_data2;
+	if (!pd) {
+		pd = &default_i2c_data;
+		pd->bus_num = 2;
+	}
 
-	npd = kmemdup(pd, sizeof(struct s3c2410_platform_i2c), GFP_KERNEL);
-	if (!npd)
-		printk(KERN_ERR "%s: no memory for platform data\n", __func__);
-	else if (!npd->cfg_gpio)
+	npd = s3c_set_platdata(pd, sizeof(struct s3c2410_platform_i2c),
+			       &s3c_device_i2c2);
+
+	if (!npd->cfg_gpio)
 		npd->cfg_gpio = s3c_i2c2_cfg_gpio;
-
-	s3c_device_i2c2.dev.platform_data = npd;
 }
 
 void s3c_i2c2_force_stop()

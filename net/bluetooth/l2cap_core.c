@@ -2281,9 +2281,9 @@ done:
 
 static inline int l2cap_command_rej(struct l2cap_conn *conn, struct l2cap_cmd_hdr *cmd, u8 *data)
 {
-	struct l2cap_cmd_rej *rej = (struct l2cap_cmd_rej *) data;
+	struct l2cap_cmd_rej_unk *rej = (struct l2cap_cmd_rej_unk *) data;
 
-	if (rej->reason != 0x0000)
+	if (rej->reason != L2CAP_REJ_NOT_UNDERSTOOD)
 		return 0;
 
 	if ((conn->info_state & L2CAP_INFO_FEAT_MASK_REQ_SENT) &&
@@ -2527,10 +2527,13 @@ static inline int l2cap_config_req(struct l2cap_conn *conn, struct l2cap_cmd_hdr
 
 	sk = chan->sk;
 
-	if (sk->sk_state != BT_CONFIG && sk->sk_state != BT_CONNECT2) {
-		struct l2cap_cmd_rej rej;
+	if (chan->state != BT_CONFIG && chan->state != BT_CONNECT2) {
+		struct l2cap_cmd_rej_cid rej;
 
-		rej.reason = cpu_to_le16(0x0002);
+		rej.reason = cpu_to_le16(L2CAP_REJ_INVALID_CID);
+		rej.scid = cpu_to_le16(chan->scid);
+		rej.dcid = cpu_to_le16(chan->dcid);
+
 		l2cap_send_cmd(conn, cmd->ident, L2CAP_COMMAND_REJ,
 				sizeof(rej), &rej);
 		goto unlock;
@@ -3021,12 +3024,12 @@ static inline void l2cap_sig_channel(struct l2cap_conn *conn,
 			err = l2cap_bredr_sig_cmd(conn, &cmd, cmd_len, data);
 
 		if (err) {
-			struct l2cap_cmd_rej rej;
+			struct l2cap_cmd_rej_unk rej;
 
 			BT_ERR("Wrong link type (%d)", err);
 
 			/* FIXME: Map err to a valid reason */
-			rej.reason = cpu_to_le16(0);
+			rej.reason = cpu_to_le16(L2CAP_REJ_NOT_UNDERSTOOD);
 			l2cap_send_cmd(conn, cmd.ident, L2CAP_COMMAND_REJ, sizeof(rej), &rej);
 		}
 
@@ -3230,15 +3233,22 @@ static void l2cap_ertm_enter_local_busy(struct l2cap_chan *chan)
 	control = chan->buffer_seq << L2CAP_CTRL_REQSEQ_SHIFT;
 	control |= L2CAP_SUPER_RCV_NOT_READY;
 	l2cap_send_sframe(chan, control);
+<<<<<<< HEAD
 
 	set_bit(CONN_RNR_SENT, &chan->conn_state);
 
+=======
+
+	set_bit(CONN_RNR_SENT, &chan->conn_state);
+
+>>>>>>> v3.1
 	__clear_ack_timer(chan);
 }
 
 static void l2cap_ertm_exit_local_busy(struct l2cap_chan *chan)
 {
 	u16 control;
+<<<<<<< HEAD
 
 	if (!test_bit(CONN_RNR_SENT, &chan->conn_state))
 		goto done;
@@ -3253,6 +3263,22 @@ static void l2cap_ertm_exit_local_busy(struct l2cap_chan *chan)
 
 	set_bit(CONN_WAIT_F, &chan->conn_state);
 
+=======
+
+	if (!test_bit(CONN_RNR_SENT, &chan->conn_state))
+		goto done;
+
+	control = chan->buffer_seq << L2CAP_CTRL_REQSEQ_SHIFT;
+	control |= L2CAP_SUPER_RCV_READY | L2CAP_CTRL_POLL;
+	l2cap_send_sframe(chan, control);
+	chan->retry_count = 1;
+
+	__clear_retrans_timer(chan);
+	__set_monitor_timer(chan);
+
+	set_bit(CONN_WAIT_F, &chan->conn_state);
+
+>>>>>>> v3.1
 done:
 	clear_bit(CONN_LOCAL_BUSY, &chan->conn_state);
 	clear_bit(CONN_RNR_SENT, &chan->conn_state);
@@ -4110,15 +4136,26 @@ static int l2cap_security_cfm(struct hci_conn *hcon, u8 status, u8 encrypt)
 				smp_distribute_keys(conn, 0);
 			}
 
+<<<<<<< HEAD
 			bh_unlock_sock(sk);
 			continue;
 		}
 
 		if (test_bit(CONF_CONNECT_PEND, &chan->conf_state)) {
+=======
+>>>>>>> v3.1
 			bh_unlock_sock(sk);
 			continue;
 		}
 
+<<<<<<< HEAD
+=======
+		if (test_bit(CONF_CONNECT_PEND, &chan->conf_state)) {
+			bh_unlock_sock(sk);
+			continue;
+		}
+
+>>>>>>> v3.1
 		if (!status && (chan->state == BT_CONNECTED ||
 						chan->state == BT_CONFIG)) {
 			l2cap_check_encryption(chan, encrypt);
@@ -4306,7 +4343,7 @@ static int l2cap_debugfs_show(struct seq_file *f, void *p)
 					c->state, __le16_to_cpu(c->psm),
 					c->scid, c->dcid, c->imtu, c->omtu,
 					c->sec_level, c->mode);
-	}
+}
 
 	read_unlock_bh(&chan_list_lock);
 

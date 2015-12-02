@@ -170,7 +170,9 @@ void __cfg80211_send_deauth(struct net_device *dev,
 			break;
 		}
 		if (wdev->authtry_bsses[i] &&
-		    memcmp(wdev->authtry_bsses[i]->pub.bssid, bssid, ETH_ALEN) == 0) {
+		    memcmp(wdev->authtry_bsses[i]->pub.bssid, bssid,
+			   ETH_ALEN) == 0 &&
+		    memcmp(mgmt->sa, dev->dev_addr, ETH_ALEN) == 0) {
 			cfg80211_unhold_bss(wdev->authtry_bsses[i]);
 			cfg80211_put_bss(&wdev->authtry_bsses[i]->pub);
 			wdev->authtry_bsses[i] = NULL;
@@ -1096,6 +1098,7 @@ void cfg80211_gtk_rekey_notify(struct net_device *dev, const u8 *bssid,
 	nl80211_gtk_rekey_notify(rdev, dev, bssid, replay_ctr, gfp);
 }
 EXPORT_SYMBOL(cfg80211_gtk_rekey_notify);
+<<<<<<< HEAD
 
 void cfg80211_pmksa_candidate_notify(struct net_device *dev, int index,
 				     const u8 *bssid, bool preauth, gfp_t gfp)
@@ -1120,3 +1123,5 @@ bool cfg80211_rx_spurious_frame(struct net_device *dev,
 	return nl80211_unexpected_frame(dev, addr, gfp);
 }
 EXPORT_SYMBOL(cfg80211_rx_spurious_frame);
+=======
+>>>>>>> v3.1

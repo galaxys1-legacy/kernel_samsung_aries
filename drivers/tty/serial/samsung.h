@@ -80,6 +80,7 @@ extern int s3c24xx_serial_initconsole(struct platform_driver *drv,
 extern int s3c24xx_serial_init(struct platform_driver *drv,
 			       struct s3c24xx_uart_info *info);
 
+<<<<<<< HEAD
 extern void s3c_setup_uart_cfg_gpio(unsigned char port);
 
 #ifdef CONFIG_SERIAL_SAMSUNG_CONSOLE
@@ -101,6 +102,8 @@ console_initcall(s3c_serial_console_init)
 #define s3c24xx_console_init(drv, inf) void no_console(void) {}
 #endif
 
+=======
+>>>>>>> v3.1
 #ifdef CONFIG_SERIAL_SAMSUNG_DEBUG
 
 extern void printascii(const char *);

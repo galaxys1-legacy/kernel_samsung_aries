@@ -639,7 +639,11 @@ EXPORT_SYMBOL_GPL(rtc_irq_unregister);
 static int rtc_update_hrtimer(struct rtc_device *rtc, int enabled)
 {
 	/*
+<<<<<<< HEAD
 	 * We unconditionally cancel the timer here, because otherwise
+=======
+	 * We always cancel the timer here first, because otherwise
+>>>>>>> v3.1
 	 * we could run into BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
 	 * when we manage to start the timer before the callback
 	 * returns HRTIMER_RESTART.

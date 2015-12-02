@@ -437,6 +437,7 @@ static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
 		},
 	},
 	{
+<<<<<<< HEAD
 	.callback = init_nvs_nosave,
 	.ident = "Asus K54C",
 	.matches = {
@@ -450,6 +451,21 @@ static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
 	.matches = {
 		DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
 		DMI_MATCH(DMI_PRODUCT_NAME, "K54HR"),
+=======
+	.callback = init_old_suspend_ordering,
+	.ident = "Asus A8N-SLI DELUXE",
+	.matches = {
+		DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
+		DMI_MATCH(DMI_BOARD_NAME, "A8N-SLI DELUXE"),
+		},
+	},
+	{
+	.callback = init_old_suspend_ordering,
+	.ident = "Asus A8N-SLI Premium",
+	.matches = {
+		DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
+		DMI_MATCH(DMI_BOARD_NAME, "A8N-SLI Premium"),
+>>>>>>> v3.1
 		},
 	},
 	{},

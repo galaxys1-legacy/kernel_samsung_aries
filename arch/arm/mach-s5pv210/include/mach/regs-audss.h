@@ -1,8 +1,17 @@
+<<<<<<< HEAD
 /* arch/arm/plat-s5pc1xx/include/plat/regs-clock.h
  *
  * Copyright 2008 Samsung Electronics
  *
  * S5PV2XX Audio SubSystem clock register definitions
+=======
+/* arch/arm/mach-s5pv210/include/mach/regs-audss.h
+ *
+ * Copyright (c) 2011 Samsung Electronics
+ *		http://www.samsung.com
+ *
+ * S5PV210 Audio SubSystem clock register definitions
+>>>>>>> v3.1
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -12,6 +21,7 @@
 #ifndef __PLAT_REGS_AUDSS_H
 #define __PLAT_REGS_AUDSS_H __FILE__
 
+<<<<<<< HEAD
 #define S5P_AUDSSREG(x)		(S5P_VA_AUDSS + (x))
 
 #define S5P_CLKSRC_AUDSS	S5P_AUDSSREG(0x0)
@@ -40,5 +50,8 @@
 #define S5P_AUDSS_CLKGATE_HCLKUART	(1<<4)
 #define S5P_AUDSS_CLKGATE_HCLKI2S	(1<<5)
 #define S5P_AUDSS_CLKGATE_CLKI2S	(1<<6)
+=======
+#define S5PV210_AUDSS_INT_MEM	(0xC0000000)
+>>>>>>> v3.1
 
 #endif /* _PLAT_REGS_AUDSS_H */

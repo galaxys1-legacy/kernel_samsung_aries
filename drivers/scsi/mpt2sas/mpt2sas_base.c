@@ -2124,6 +2124,10 @@ static int
 _base_allocate_memory_pools(struct MPT2SAS_ADAPTER *ioc,  int sleep_flag)
 {
 	struct mpt2sas_facts *facts;
+<<<<<<< HEAD
+=======
+	u32 queue_size, queue_diff;
+>>>>>>> v3.1
 	u16 max_sge_elements;
 	u16 chains_needed_per_io;
 	u32 sz, total_sz;

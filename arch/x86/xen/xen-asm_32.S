@@ -117,7 +117,11 @@ xen_iret_start_crit:
 	 * touch XEN_vcpu_info_mask.
 	 */
 	jne 1f
+<<<<<<< HEAD
 	movb $1, %ss:XEN_vcpu_info_mask(%eax)
+=======
+	movb $1, XEN_vcpu_info_mask(%eax)
+>>>>>>> v3.1
 
 1:	popl %eax
 

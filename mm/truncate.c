@@ -336,6 +336,14 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
 	unsigned long count = 0;
 	int i;
 
+	/*
+	 * Note: this function may get called on a shmem/tmpfs mapping:
+	 * pagevec_lookup() might then return 0 prematurely (because it
+	 * got a gangful of swap entries); but it's hardly worth worrying
+	 * about - it can rarely have anything to free from such a mapping
+	 * (most pages are dirty), and already skips over any difficulties.
+	 */
+
 	pagevec_init(&pvec, 0);
 	while (index <= end && pagevec_lookup(&pvec, mapping, index,
 			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1)) {
@@ -610,12 +618,19 @@ int vmtruncate_range(struct inode *inode, loff_t lstart, loff_t lend)
 		return -ENOSYS;
 
 	mutex_lock(&inode->i_mutex);
+<<<<<<< HEAD
 	down_write(&inode->i_alloc_sem);
+=======
+	inode_dio_wait(inode);
+>>>>>>> v3.1
 	unmap_mapping_range(mapping, holebegin, holelen, 1);
 	inode->i_op->truncate_range(inode, lstart, lend);
 	/* unmap again to remove racily COWed private pages */
 	unmap_mapping_range(mapping, holebegin, holelen, 1);
+<<<<<<< HEAD
 	up_write(&inode->i_alloc_sem);
+=======
+>>>>>>> v3.1
 	mutex_unlock(&inode->i_mutex);
 
 	return 0;

@@ -336,9 +336,20 @@ again:
 		int shmem_swizzled = PageSwapCache(page_head);
 		unlock_page(page_head);
 		put_page(page_head);
+<<<<<<< HEAD
 		if (shmem_swizzled)
 			goto again;
 		return -EFAULT;
+=======
+		/*
+		* ZERO_PAGE pages don't have a mapping. Avoid a busy loop
+		* trying to find one. RW mapping would have COW'd (and thus
+		* have a mapping) so this page is RO and won't ever change.
+		*/
+		if ((page_head == ZERO_PAGE(address)))
+			return -EFAULT;
+		goto again;
+>>>>>>> v3.1
 	}
 
 	/*

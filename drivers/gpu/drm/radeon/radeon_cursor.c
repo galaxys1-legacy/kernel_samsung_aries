@@ -217,6 +217,7 @@ int radeon_crtc_cursor_move(struct drm_crtc *crtc,
 	int xorigin = 0, yorigin = 0;
 	int w = radeon_crtc->cursor_width;
 
+<<<<<<< HEAD
 	if (ASIC_IS_AVIVO(rdev)) {
 		/* avivo cursor are offset into the total surface */
 		x += crtc->x;
@@ -234,6 +235,25 @@ int radeon_crtc_cursor_move(struct drm_crtc *crtc,
 		yorigin = CURSOR_HEIGHT - 1;
 
 	if (ASIC_IS_AVIVO(rdev)) {
+=======
+	if (ASIC_IS_AVIVO(rdev)) {
+		/* avivo cursor are offset into the total surface */
+		x += crtc->x;
+		y += crtc->y;
+	}
+	DRM_DEBUG("x %d y %d c->x %d c->y %d\n", x, y, crtc->x, crtc->y);
+
+	if (x < 0) {
+		xorigin = min(-x, CURSOR_WIDTH - 1);
+		x = 0;
+	}
+	if (y < 0) {
+		yorigin = min(-y, CURSOR_HEIGHT - 1);
+		y = 0;
+	}
+
+	if (ASIC_IS_AVIVO(rdev)) {
+>>>>>>> v3.1
 		int i = 0;
 		struct drm_crtc *crtc_p;
 
@@ -270,16 +290,12 @@ int radeon_crtc_cursor_move(struct drm_crtc *crtc,
 
 	radeon_lock_cursor(crtc, true);
 	if (ASIC_IS_DCE4(rdev)) {
-		WREG32(EVERGREEN_CUR_POSITION + radeon_crtc->crtc_offset,
-		       ((xorigin ? 0 : x) << 16) |
-		       (yorigin ? 0 : y));
+		WREG32(EVERGREEN_CUR_POSITION + radeon_crtc->crtc_offset, (x << 16) | y);
 		WREG32(EVERGREEN_CUR_HOT_SPOT + radeon_crtc->crtc_offset, (xorigin << 16) | yorigin);
 		WREG32(EVERGREEN_CUR_SIZE + radeon_crtc->crtc_offset,
 		       ((w - 1) << 16) | (radeon_crtc->cursor_height - 1));
 	} else if (ASIC_IS_AVIVO(rdev)) {
-		WREG32(AVIVO_D1CUR_POSITION + radeon_crtc->crtc_offset,
-			     ((xorigin ? 0 : x) << 16) |
-			     (yorigin ? 0 : y));
+		WREG32(AVIVO_D1CUR_POSITION + radeon_crtc->crtc_offset, (x << 16) | y);
 		WREG32(AVIVO_D1CUR_HOT_SPOT + radeon_crtc->crtc_offset, (xorigin << 16) | yorigin);
 		WREG32(AVIVO_D1CUR_SIZE + radeon_crtc->crtc_offset,
 		       ((w - 1) << 16) | (radeon_crtc->cursor_height - 1));
@@ -293,8 +309,8 @@ int radeon_crtc_cursor_move(struct drm_crtc *crtc,
 			| yorigin));
 		WREG32(RADEON_CUR_HORZ_VERT_POSN + radeon_crtc->crtc_offset,
 		       (RADEON_CUR_LOCK
-			| ((xorigin ? 0 : x) << 16)
-			| (yorigin ? 0 : y)));
+			| (x << 16)
+			| y));
 		/* offset is from DISP(2)_BASE_ADDRESS */
 		WREG32(RADEON_CUR_OFFSET + radeon_crtc->crtc_offset, (radeon_crtc->legacy_cursor_offset +
 								      (yorigin * 256)));

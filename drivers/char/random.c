@@ -1385,11 +1385,19 @@ ctl_table random_table[] = {
 
 static u32 random_int_secret[MD5_MESSAGE_BYTES / 4] ____cacheline_aligned;
 
+<<<<<<< HEAD
 int random_int_secret_init(void)
+=======
+static int __init random_int_secret_init(void)
+>>>>>>> v3.1
 {
 	get_random_bytes(random_int_secret, sizeof(random_int_secret));
 	return 0;
 }
+<<<<<<< HEAD
+=======
+late_initcall(random_int_secret_init);
+>>>>>>> v3.1
 
 /*
  * Get a random word for internal kernel use only. Similar to urandom but
@@ -1400,6 +1408,7 @@ int random_int_secret_init(void)
 DEFINE_PER_CPU(__u32 [MD5_DIGEST_WORDS], get_random_int_hash);
 unsigned int get_random_int(void)
 {
+<<<<<<< HEAD
 	__u32 *hash;
 	unsigned int ret;
 
@@ -1408,6 +1417,11 @@ unsigned int get_random_int(void)
 
 	hash = get_cpu_var(get_random_int_hash);
 
+=======
+	__u32 *hash = get_cpu_var(get_random_int_hash);
+	unsigned int ret;
+
+>>>>>>> v3.1
 	hash[0] += current->pid + jiffies + get_cycles();
 	md5_transform(hash, random_int_secret);
 	ret = hash[0];

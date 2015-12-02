@@ -1288,6 +1288,7 @@
  */
 /* TagTracer MIFARE*/
 #define FTDI_ZEITCONTROL_TAGTRACE_MIFARE_PID	0xF7C0
+<<<<<<< HEAD
 
 /*
  * Rainforest Automation
@@ -1307,3 +1308,5 @@
  * Manufacturer: Crucible Technologies
  */
 #define FTDI_CT_COMET_PID	0x8e08
+=======
+>>>>>>> v3.1

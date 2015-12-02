@@ -15,7 +15,6 @@ obj-				:=
 obj-$(CONFIG_CPU_S5PV210)	+= cpu.o init.o clock.o dma.o
 obj-$(CONFIG_CPU_S5PV210)	+= setup-i2c0.o
 obj-$(CONFIG_S5PV210_PM)	+= pm.o sleep.o
-obj-$(CONFIG_CPU_FREQ)		+= cpufreq.o
 
 obj-$(CONFIG_S5PV210_POWER_DOMAIN)	+= power-domain.o
 obj-$(CONFIG_S5PV210_CORESIGHT) += coresight.o

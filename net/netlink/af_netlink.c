@@ -1694,7 +1694,11 @@ static int netlink_dump(struct sock *sk)
 
 	skb = sock_rmalloc(sk, alloc_size, 0, GFP_KERNEL);
 	if (!skb)
+<<<<<<< HEAD
 		goto errout;
+=======
+		goto errout_skb;
+>>>>>>> v3.1
 
 	len = cb->dump(skb, cb);
 
@@ -1711,6 +1715,8 @@ static int netlink_dump(struct sock *sk)
 	nlh = nlmsg_put_answer(skb, cb, NLMSG_DONE, sizeof(len), NLM_F_MULTI);
 	if (!nlh)
 		goto errout_skb;
+
+	nl_dump_check_consistent(cb, nlh);
 
 	memcpy(nlmsg_data(nlh), &len, sizeof(len));
 
@@ -1730,7 +1736,6 @@ static int netlink_dump(struct sock *sk)
 errout_skb:
 	mutex_unlock(nlk->cb_mutex);
 	kfree_skb(skb);
-errout:
 	return err;
 }
 

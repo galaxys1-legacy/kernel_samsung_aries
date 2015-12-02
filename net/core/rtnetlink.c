@@ -60,6 +60,7 @@ struct rtnl_link {
 };
 
 static DEFINE_MUTEX(rtnl_mutex);
+static u16 min_ifinfo_dump_size;
 
 void rtnl_lock(void)
 {
@@ -1044,6 +1045,7 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
 	s_idx = cb->args[1];
 
 	rcu_read_lock();
+<<<<<<< HEAD
 
 	if (nlmsg_parse(cb->nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
 			ifla_policy) >= 0) {
@@ -1051,6 +1053,9 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
 		if (tb[IFLA_EXT_MASK])
 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
 	}
+=======
+	cb->seq = net->dev_base_seq;
+>>>>>>> v3.1
 
 	for (h = s_h; h < NETDEV_HASHENTRIES; h++, s_idx = 0) {
 		idx = 0;
@@ -1064,6 +1069,8 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
 					     NLM_F_MULTI,
 					     ext_filter_mask) <= 0)
 				goto out;
+
+			nl_dump_check_consistent(cb, nlmsg_hdr(skb));
 cont:
 			idx++;
 		}
@@ -1868,6 +1875,7 @@ static int rtnl_getlink(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
 	return err;
 }
 
+<<<<<<< HEAD
 static u16 rtnl_calcit(struct sk_buff *skb, struct nlmsghdr *nlh)
 {
 	struct net *net = sock_net(skb->sk);
@@ -1894,6 +1902,10 @@ static u16 rtnl_calcit(struct sk_buff *skb, struct nlmsghdr *nlh)
 						           ext_filter_mask));
 	}
 
+=======
+static u16 rtnl_calcit(struct sk_buff *skb)
+{
+>>>>>>> v3.1
 	return min_ifinfo_dump_size;
 }
 
@@ -1928,11 +1940,21 @@ void rtmsg_ifinfo(int type, struct net_device *dev, unsigned change)
 	int err = -ENOBUFS;
 	size_t if_info_size;
 
+<<<<<<< HEAD
 	skb = nlmsg_new((if_info_size = if_nlmsg_size(dev, 0)), GFP_KERNEL);
 	if (skb == NULL)
 		goto errout;
 
 	err = rtnl_fill_ifinfo(skb, dev, type, 0, 0, change, 0, 0);
+=======
+	skb = nlmsg_new((if_info_size = if_nlmsg_size(dev)), GFP_KERNEL);
+	if (skb == NULL)
+		goto errout;
+
+	min_ifinfo_dump_size = max_t(u16, if_info_size, min_ifinfo_dump_size);
+
+	err = rtnl_fill_ifinfo(skb, dev, type, 0, 0, change, 0);
+>>>>>>> v3.1
 	if (err < 0) {
 		/* -EMSGSIZE implies BUG in if_nlmsg_size() */
 		WARN_ON(err == -EMSGSIZE);
@@ -1990,7 +2012,11 @@ static int rtnetlink_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 			return -EOPNOTSUPP;
 		calcit = rtnl_get_calcit(family, type);
 		if (calcit)
+<<<<<<< HEAD
 			min_dump_alloc = calcit(skb, nlh);
+=======
+			min_dump_alloc = calcit(skb);
+>>>>>>> v3.1
 
 		__rtnl_unlock();
 		rtnl = net->rtnl;

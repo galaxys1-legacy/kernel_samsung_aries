@@ -934,8 +934,8 @@ int mnt_had_events(struct proc_mounts *p)
 	int res = 0;
 
 	br_read_lock(vfsmount_lock);
-	if (p->event != ns->event) {
-		p->event = ns->event;
+	if (p->m.poll_event != ns->event) {
+		p->m.poll_event = ns->event;
 		res = 1;
 	}
 	br_read_unlock(vfsmount_lock);
@@ -2742,8 +2742,11 @@ void kern_unmount(struct vfsmount *mnt)
 	}
 }
 EXPORT_SYMBOL(kern_unmount);
+<<<<<<< HEAD
 
 bool our_mnt(struct vfsmount *mnt)
 {
 	return check_mnt(mnt);
 }
+=======
+>>>>>>> v3.1

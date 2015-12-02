@@ -46,3 +46,8 @@ static inline void s3c_pm_arch_update_uart(void __iomem *regs,
 	/* nothing here yet */
 }
 
+<<<<<<< HEAD
+=======
+static inline void s3c_pm_restored_gpios(void) { }
+static inline void s3c_pm_saved_gpios(void) { }
+>>>>>>> v3.1

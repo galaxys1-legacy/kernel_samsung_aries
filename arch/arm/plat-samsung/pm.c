@@ -20,6 +20,7 @@
 #include <linux/io.h>
 
 #include <asm/cacheflush.h>
+#include <asm/suspend.h>
 #include <mach/hardware.h>
 #include <mach/map.h>
 
@@ -304,8 +305,12 @@ static void __maybe_unused s3c_pm_show_resume_irqs(int start,
 
 
 void (*pm_cpu_prep)(void);
+<<<<<<< HEAD
 void (*pm_cpu_sleep)(void);
 void (*pm_cpu_restore)(void);
+=======
+int (*pm_cpu_sleep)(unsigned long);
+>>>>>>> v3.1
 
 #define any_allowed(mask, allow) (((mask) & (allow)) != (allow))
 
@@ -342,6 +347,7 @@ static int s3c_pm_enter(suspend_state_t state)
 	/* save all necessary core registers not covered by the drivers */
 
 	s3c_pm_save_gpios();
+	s3c_pm_saved_gpios();
 	s3c_pm_save_uarts();
 	s3c_pm_save_core();
 
@@ -373,10 +379,11 @@ static int s3c_pm_enter(suspend_state_t state)
 
 	s3c_pm_arch_stop_clocks();
 
-	/* s3c_cpu_save will also act as our return point from when
+	/* this will also act as our return point from when
 	 * we resume as it saves its own register state and restores it
 	 * during the resume.  */
 
+<<<<<<< HEAD
 	pmstats->sleep_count++;
 	pmstats->sleep_freq = __raw_readl(S5P_CLK_DIV0);
 	s3c_cpu_save(0, PLAT_PHYS_OFFSET - PAGE_OFFSET);
@@ -386,6 +393,9 @@ static int s3c_pm_enter(suspend_state_t state)
 	/* restore the cpu state using the kernel's cpu init code. */
 
 	cpu_init();
+=======
+	cpu_suspend(0, pm_cpu_sleep);
+>>>>>>> v3.1
 
 	fiq_glue_resume();
 	local_fiq_enable();
@@ -393,7 +403,11 @@ static int s3c_pm_enter(suspend_state_t state)
 	s3c_pm_restore_core();
 	s3c_pm_restore_uarts();
 	s3c_pm_restore_gpios();
+<<<<<<< HEAD
 	s5pv210_restore_eint_group();
+=======
+	s3c_pm_restored_gpios();
+>>>>>>> v3.1
 
 	s3c_pm_debug_init();
 

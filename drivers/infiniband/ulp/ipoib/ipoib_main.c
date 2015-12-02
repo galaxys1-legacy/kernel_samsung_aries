@@ -718,7 +718,10 @@ static int ipoib_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	struct neighbour *n = NULL;
 	unsigned long flags;
 
+<<<<<<< HEAD
 	rcu_read_lock();
+=======
+>>>>>>> v3.1
 	if (likely(skb_dst(skb)))
 		n = dst_get_neighbour(skb_dst(skb));
 
@@ -758,7 +761,11 @@ static int ipoib_start_xmit(struct sk_buff *skb, struct net_device *dev)
 			}
 		} else if (neigh->ah) {
 			ipoib_send(dev, skb, neigh->ah, IPOIB_QPN(n->ha));
+<<<<<<< HEAD
 			goto unlock;
+=======
+			return NETDEV_TX_OK;
+>>>>>>> v3.1
 		}
 
 		if (skb_queue_len(&neigh->queue) < IPOIB_MAX_PATH_REC_QUEUE) {
@@ -819,6 +826,8 @@ static int ipoib_hard_header(struct sk_buff *skb,
 			     const void *daddr, const void *saddr, unsigned len)
 {
 	struct ipoib_header *header;
+	struct dst_entry *dst;
+	struct neighbour *n;
 
 	header = (struct ipoib_header *) skb_push(skb, sizeof *header);
 
@@ -830,9 +839,20 @@ static int ipoib_hard_header(struct sk_buff *skb,
 	 * destination address into skb->cb so we can figure out where
 	 * to send the packet later.
 	 */
+<<<<<<< HEAD
 	if (!skb_dst(skb)) {
 		struct ipoib_cb *cb = (struct ipoib_cb *) skb->cb;
 		memcpy(cb->hwaddr, daddr, INFINIBAND_ALEN);
+=======
+	dst = skb_dst(skb);
+	n = NULL;
+	if (dst)
+		n = dst_get_neighbour(dst);
+	if ((!dst || !n) && daddr) {
+		struct ipoib_pseudoheader *phdr =
+			(struct ipoib_pseudoheader *) skb_push(skb, sizeof *phdr);
+		memcpy(phdr->hwaddr, daddr, INFINIBAND_ALEN);
+>>>>>>> v3.1
 	}
 
 	return 0;

@@ -467,7 +467,7 @@ static struct socket *sock_alloc(void)
 	struct inode *inode;
 	struct socket *sock;
 
-	inode = new_inode(sock_mnt->mnt_sb);
+	inode = new_inode_pseudo(sock_mnt->mnt_sb);
 	if (!inode)
 		return NULL;
 
@@ -580,7 +580,7 @@ int sock_sendmsg(struct socket *sock, struct msghdr *msg, size_t size)
 }
 EXPORT_SYMBOL(sock_sendmsg);
 
-int sock_sendmsg_nosec(struct socket *sock, struct msghdr *msg, size_t size)
+static int sock_sendmsg_nosec(struct socket *sock, struct msghdr *msg, size_t size)
 {
 	struct kiocb iocb;
 	struct sock_iocb siocb;
@@ -1876,9 +1876,15 @@ struct used_address {
 	unsigned int name_len;
 };
 
+<<<<<<< HEAD
 static int ___sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
 			  struct msghdr *msg_sys, unsigned flags,
 			  struct used_address *used_address)
+=======
+static int __sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
+			 struct msghdr *msg_sys, unsigned flags,
+			 struct used_address *used_address)
+>>>>>>> v3.1
 {
 	struct compat_msghdr __user *msg_compat =
 	    (struct compat_msghdr __user *)msg;
@@ -2008,7 +2014,11 @@ long __sys_sendmsg(int fd, struct msghdr __user *msg, unsigned flags)
 	if (!sock)
 		goto out;
 
+<<<<<<< HEAD
 	err = ___sys_sendmsg(sock, msg, &msg_sys, flags, NULL);
+=======
+	err = __sys_sendmsg(sock, msg, &msg_sys, flags, NULL);
+>>>>>>> v3.1
 
 	fput_light(sock->file, fput_needed);
 out:
@@ -2052,16 +2062,26 @@ int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
 
 	while (datagrams < vlen) {
 		if (MSG_CMSG_COMPAT & flags) {
+<<<<<<< HEAD
 			err = ___sys_sendmsg(sock, (struct msghdr __user *)compat_entry,
 					     &msg_sys, flags, &used_address);
+=======
+			err = __sys_sendmsg(sock, (struct msghdr __user *)compat_entry,
+					    &msg_sys, flags, &used_address);
+>>>>>>> v3.1
 			if (err < 0)
 				break;
 			err = __put_user(err, &compat_entry->msg_len);
 			++compat_entry;
 		} else {
+<<<<<<< HEAD
 			err = ___sys_sendmsg(sock,
 					     (struct msghdr __user *)entry,
 					     &msg_sys, flags, &used_address);
+=======
+			err = __sys_sendmsg(sock, (struct msghdr __user *)entry,
+					    &msg_sys, flags, &used_address);
+>>>>>>> v3.1
 			if (err < 0)
 				break;
 			err = put_user(err, &entry->msg_len);

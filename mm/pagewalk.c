@@ -176,11 +176,15 @@ static int walk_hugetlb_range(struct vm_area_struct *vma,
  * associated range, and a copy of the original mm_walk for access to
  * the ->private or ->mm fields.
  *
- * No locks are taken, but the bottom level iterator will map PTE
+ * Usually no locks are taken, but splitting transparent huge page may
+ * take page table lock. And the bottom level iterator will map PTE
  * directories from highmem if necessary.
  *
  * If any callback returns a non-zero value, the walk is aborted and
  * the return value is propagated back to the caller. Otherwise 0 is returned.
+ *
+ * walk->mm->mmap_sem must be held for at least read if walk->hugetlb_entry
+ * is !NULL.
  */
 int walk_page_range(unsigned long addr, unsigned long end,
 		    struct mm_walk *walk)

@@ -299,12 +299,21 @@
 	usracc	ldr, \reg, \ptr, \inc, \cond, \rept, \abort
 	.endm
 
+<<<<<<< HEAD
 	.macro check_uaccess, addr:req, size:req, limit:req, tmp:req, bad:req
 #ifndef CONFIG_CPU_USE_DOMAINS
 	adds	\tmp, \addr, #\size - 1
 	sbcccs	\tmp, \tmp, \limit
 	bcs	\bad
 #endif
+=======
+/* Utility macro for declaring string literals */
+	.macro	string name:req, string
+	.type \name , #object
+\name:
+	.asciz "\string"
+	.size \name , . - \name
+>>>>>>> v3.1
 	.endm
 
 #endif /* __ASM_ASSEMBLER_H__ */

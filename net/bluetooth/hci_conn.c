@@ -522,7 +522,11 @@ struct hci_conn *hci_connect(struct hci_dev *hdev, int type,
 		if (!entry)
 			return ERR_PTR(-EHOSTUNREACH);
 
+<<<<<<< HEAD
 		le = hci_conn_add(hdev, LE_LINK, 0, dst);
+=======
+		le = hci_conn_add(hdev, LE_LINK, dst);
+>>>>>>> v3.1
 		if (!le)
 			return ERR_PTR(-ENOMEM);
 

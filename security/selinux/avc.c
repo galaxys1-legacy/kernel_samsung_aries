@@ -557,9 +557,38 @@ inline int avc_audit(u32 ssid, u32 tsid,
 	if (likely(!audited))
 		return 0;
 
+<<<<<<< HEAD
 	return slow_avc_audit(ssid, tsid, tclass,
 		requested, audited, denied, result,
 		a, flags);
+=======
+	if (!a) {
+		a = &stack_data;
+		COMMON_AUDIT_DATA_INIT(a, NONE);
+	}
+
+	/*
+	 * When in a RCU walk do the audit on the RCU retry.  This is because
+	 * the collection of the dname in an inode audit message is not RCU
+	 * safe.  Note this may drop some audits when the situation changes
+	 * during retry. However this is logically just as if the operation
+	 * happened a little later.
+	 */
+	if ((a->type == LSM_AUDIT_DATA_INODE) &&
+	    (flags & MAY_NOT_BLOCK))
+		return -ECHILD;
+
+	a->selinux_audit_data.tclass = tclass;
+	a->selinux_audit_data.requested = requested;
+	a->selinux_audit_data.ssid = ssid;
+	a->selinux_audit_data.tsid = tsid;
+	a->selinux_audit_data.audited = audited;
+	a->selinux_audit_data.denied = denied;
+	a->lsm_pre_audit = avc_audit_pre_callback;
+	a->lsm_post_audit = avc_audit_post_callback;
+	common_lsm_audit(a);
+	return 0;
+>>>>>>> v3.1
 }
 
 /**

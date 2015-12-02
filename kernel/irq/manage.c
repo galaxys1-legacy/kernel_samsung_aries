@@ -895,6 +895,27 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 
 	if (desc->irq_data.chip == &no_irq_chip)
 		return -ENOSYS;
+<<<<<<< HEAD
+=======
+	if (!try_module_get(desc->owner))
+		return -ENODEV;
+	/*
+	 * Some drivers like serial.c use request_irq() heavily,
+	 * so we have to be careful not to interfere with a
+	 * running system.
+	 */
+	if (new->flags & IRQF_SAMPLE_RANDOM) {
+		/*
+		 * This function might sleep, we want to call it first,
+		 * outside of the atomic block.
+		 * Yes, this might clear the entropy pool if the wrong
+		 * driver is attempted to be loaded, without actually
+		 * installing a new handler, but is this really a problem,
+		 * only the sysadmin is able to do this.
+		 */
+		rand_initialize_irq(irq);
+	}
+>>>>>>> v3.1
 
 	/*
 	 * Check whether the interrupt nests into another interrupt
@@ -902,8 +923,10 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 	 */
 	nested = irq_settings_is_nested_thread(desc);
 	if (nested) {
-		if (!new->thread_fn)
-			return -EINVAL;
+		if (!new->thread_fn) {
+			ret = -EINVAL;
+			goto out_mput;
+		}
 		/*
 		 * Replace the primary handler which was provided from
 		 * the driver for non nested interrupt handling by the
@@ -925,8 +948,10 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 
 		t = kthread_create(irq_thread, new, "irq/%d-%s", irq,
 				   new->name);
-		if (IS_ERR(t))
-			return PTR_ERR(t);
+		if (IS_ERR(t)) {
+			ret = PTR_ERR(t);
+			goto out_mput;
+		}
 		/*
 		 * We keep the reference to the task struct even if
 		 * the thread dies to avoid that the interrupt code
@@ -1133,6 +1158,8 @@ out_thread:
 			kthread_stop(t);
 		put_task_struct(t);
 	}
+out_mput:
+	module_put(desc->owner);
 	return ret;
 }
 
@@ -1241,6 +1268,7 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
 		put_task_struct(action->thread);
 	}
 
+	module_put(desc->owner);
 	return action;
 }
 

@@ -41,8 +41,12 @@
 #include <linux/skbuff.h>
 #include <net/netlabel.h>
 #include <net/request_sock.h>
+<<<<<<< HEAD
 #include <asm/atomic.h>
 #include <asm/unaligned.h>
+=======
+#include <linux/atomic.h>
+>>>>>>> v3.1
 
 /* known doi values */
 #define CIPSO_V4_DOI_UNKNOWN          0x00000000

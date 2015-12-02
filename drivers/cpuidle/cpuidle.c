@@ -89,6 +89,12 @@ int cpuidle_idle_call(void)
 	if (!initialized)
 		return -ENODEV;
 
+	if (off)
+		return -ENODEV;
+
+	if (!initialized)
+		return -ENODEV;
+
 	/* check if the device is ready */
 	if (!dev || !dev->enabled)
 		return -EBUSY;
@@ -131,7 +137,11 @@ int cpuidle_idle_call(void)
 
 	/* give the governor an opportunity to reflect on the outcome */
 	if (cpuidle_curr_governor->reflect)
+<<<<<<< HEAD
 		cpuidle_curr_governor->reflect(dev, entered_state);
+=======
+		cpuidle_curr_governor->reflect(dev);
+>>>>>>> v3.1
 
 	return 0;
 }

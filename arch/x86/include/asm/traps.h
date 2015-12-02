@@ -2,6 +2,10 @@
 #define _ASM_X86_TRAPS_H
 
 #include <linux/kprobes.h>
+<<<<<<< HEAD
+=======
+
+>>>>>>> v3.1
 #include <asm/debugreg.h>
 #include <asm/siginfo.h>			/* TRAP_TRACE, ... */
 

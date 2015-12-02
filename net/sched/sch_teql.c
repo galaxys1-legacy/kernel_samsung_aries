@@ -229,7 +229,13 @@ __teql_resolve(struct sk_buff *skb, struct sk_buff *skb_res,
 	       struct net_device *dev, struct netdev_queue *txq,
 	       struct neighbour *mn)
 {
+<<<<<<< HEAD
 	struct teql_sched_data *q = qdisc_priv(txq->qdisc);
+=======
+	struct netdev_queue *dev_queue = netdev_get_tx_queue(dev, 0);
+	struct teql_sched_data *q = qdisc_priv(dev_queue->qdisc);
+	struct neighbour *mn = dst_get_neighbour(skb_dst(skb));
+>>>>>>> v3.1
 	struct neighbour *n = q->ncache;
 
 	if (mn->tbl == NULL)
@@ -273,7 +279,13 @@ static inline int teql_resolve(struct sk_buff *skb,
 	if (txq->qdisc == &noop_qdisc)
 		return -ENODEV;
 
+<<<<<<< HEAD
 	if (!dev->header_ops || !dst)
+=======
+	if (dev->header_ops == NULL ||
+	    skb_dst(skb) == NULL ||
+	    dst_get_neighbour(skb_dst(skb)) == NULL)
+>>>>>>> v3.1
 		return 0;
 
 	rcu_read_lock();

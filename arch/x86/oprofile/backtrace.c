@@ -12,10 +12,13 @@
 #include <linux/sched.h>
 #include <linux/mm.h>
 #include <linux/compat.h>
+<<<<<<< HEAD
 #include <linux/highmem.h>
+=======
+#include <linux/uaccess.h>
+>>>>>>> v3.1
 
 #include <asm/ptrace.h>
-#include <asm/uaccess.h>
 #include <asm/stacktrace.h>
 
 static int backtrace_stack(void *data, char *name)

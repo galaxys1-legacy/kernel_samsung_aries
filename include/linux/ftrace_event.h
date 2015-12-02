@@ -78,6 +78,7 @@ struct trace_iterator {
 	struct trace_entry	*ent;
 	unsigned long		lost_events;
 	int			leftover;
+	int			ent_size;
 	int			cpu;
 	u64			ts;
 
@@ -131,6 +132,10 @@ void trace_current_buffer_unlock_commit(struct ring_buffer *buffer,
 void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
 				       struct ring_buffer_event *event,
 					unsigned long flags, int pc);
+void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
+					    struct ring_buffer_event *event,
+					    unsigned long flags, int pc,
+					    struct pt_regs *regs);
 void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
 					 struct ring_buffer_event *event);
 

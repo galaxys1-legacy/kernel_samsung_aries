@@ -42,9 +42,12 @@ extern void fpsave(unsigned long *fpregs, unsigned long *fsr,
 extern void fpload(unsigned long *fpregs, unsigned long *fsr);
 
 #else /* CONFIG_SPARC32 */
+<<<<<<< HEAD
 
 #include <asm/trap_block.h>
 
+=======
+>>>>>>> v3.1
 struct popc_3insn_patch_entry {
 	unsigned int	addr;
 	unsigned int	insns[3];
