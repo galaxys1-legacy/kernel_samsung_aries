@@ -335,20 +335,17 @@ config BACKLIGHT_PCF50633
 	  If you have a backlight driven by a NXP PCF50633 MFD, say Y here to
 	  enable its driver.
 
-<<<<<<< HEAD
 config BACKLIGHT_CMC623_PWM
         bool "CMC623 PWM Backlight Driver"
         depends on FB_S3C_LVDS && FB_S3C_CMC623
         default y
         help
-=======
 config BACKLIGHT_AAT2870
 	tristate "AnalogicTech AAT2870 Backlight"
 	depends on BACKLIGHT_CLASS_DEVICE && MFD_AAT2870_CORE
 	help
 	  If you have a AnalogicTech AAT2870 say Y to enable the
 	  backlight driver.
->>>>>>> v3.1
 
 endif # BACKLIGHT_CLASS_DEVICE
 

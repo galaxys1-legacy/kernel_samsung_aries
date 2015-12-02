@@ -296,7 +296,6 @@ config USB_S3C_HSUDC
 
 	  This driver has been tested on S3C2416 and S3C2450 processors.
 
-<<<<<<< HEAD
 config USB_S3C_HSUDC
 	tristate
 	depends on USB_GADGET_S3C_HSUDC
@@ -319,11 +318,11 @@ config USB_GADGET_S3C_OTGD
 
 config USB_GADGET_PXA_U2O
 	boolean "PXA9xx Processor USB2.0 controller"
-=======
+
 config USB_PXA_U2O
 	tristate "PXA9xx Processor USB2.0 controller"
 	depends on ARCH_MMP
->>>>>>> v3.1
+
 	select USB_GADGET_DUALSPEED
 	help
 	  PXA9xx Processor series include a high speed USB2.0 device
@@ -467,7 +466,6 @@ config USB_LANGWELL
 	   dynamically linked module called "langwell_udc" and force all
 	   gadget drivers to also be dynamically linked.
 
-<<<<<<< HEAD
 config USB_LANGWELL
 	tristate
 	depends on USB_GADGET_LANGWELL
@@ -476,10 +474,10 @@ config USB_LANGWELL
 
 config USB_GADGET_EG20T
 	tristate "Intel EG20T PCH/OKI SEMICONDUCTOR IOH(ML7213/ML7831) UDC"
-=======
+
 config USB_EG20T
 	tristate "Intel EG20T PCH/OKI SEMICONDUCTOR ML7213 IOH UDC"
->>>>>>> v3.1
+
 	depends on PCI
 	select USB_GADGET_DUALSPEED
 	help

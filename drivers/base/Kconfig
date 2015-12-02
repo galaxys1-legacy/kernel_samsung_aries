@@ -172,7 +172,6 @@ config SYS_HYPERVISOR
 	bool
 	default n
 
-<<<<<<< HEAD
 config DMA_SHARED_BUFFER
 	bool "Buffer framework to be shared between drivers"
 	default n
@@ -182,8 +181,6 @@ config DMA_SHARED_BUFFER
 	  multiple drivers. A buffer is associated with a file using driver
 	  APIs extension; the file's descriptor can then be passed on to other
 	  driver.
-=======
 source "drivers/base/regmap/Kconfig"
->>>>>>> v3.1
 
 endmenu

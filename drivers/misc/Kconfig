@@ -518,7 +518,6 @@ config PCH_PHUB
 	  To compile this driver as a module, choose M here: the module will
 	  be called pch_phub.
 
-<<<<<<< HEAD
 config WL127X_RFKILL
 	tristate "Bluetooth power control driver for TI wl127x"
 	depends on RFKILL
@@ -551,8 +550,6 @@ config SAMSUNG_JACK
 
 	 If unsure, say N.
 
-=======
->>>>>>> v3.1
 config USB_SWITCH_FSA9480
 	tristate "FSA9480 USB Switch"
 	depends on I2C
@@ -562,7 +559,6 @@ config USB_SWITCH_FSA9480
 	  stereo and mono audio, video, microphone and UART data to use
 	  a common connector port.
 
-<<<<<<< HEAD
 config 30PIN_CONN
         tristate "Accessory detection driver"
         depends on I2C
@@ -577,8 +573,6 @@ config MHL_SII9234
 	---help---
 	Mobile HD Link Transmitter driver for SiI9234
 
-=======
->>>>>>> v3.1
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"

@@ -135,8 +135,6 @@ config SND_SOC_AD1980
 config SND_SOC_AD73311
 	tristate
 
-<<<<<<< HEAD
-=======
 config SND_SOC_ADAU1701
 	select SIGMA
 	tristate
@@ -144,7 +142,6 @@ config SND_SOC_ADAU1701
 config SND_SOC_ADAV80X
 	tristate
 
->>>>>>> v3.1
 config SND_SOC_ADS117X
 	tristate
 

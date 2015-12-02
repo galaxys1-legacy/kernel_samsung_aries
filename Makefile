@@ -1,15 +1,8 @@
 VERSION = 3
-<<<<<<< HEAD
-PATCHLEVEL = 0
-SUBLEVEL = 101
-EXTRAVERSION =
-NAME = Sodden Ben Lomond
-=======
 PATCHLEVEL = 1
 SUBLEVEL = 0
 EXTRAVERSION =
 NAME = "Divemaster Edition"
->>>>>>> v3.1
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"

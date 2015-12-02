@@ -734,10 +734,8 @@ extern int __build_bug_on_failed;
 # define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
 #endif
 
-<<<<<<< HEAD
 /* To identify board information in panic logs, set this */
 extern char *mach_panic_string;
-=======
 struct sysinfo;
 extern int do_sysinfo(struct sysinfo *info);
 
@@ -760,6 +758,5 @@ struct sysinfo {
 	unsigned int mem_unit;		/* Memory unit size in bytes */
 	char _f[20-2*sizeof(long)-sizeof(int)];	/* Padding: libc5 uses this.. */
 };
->>>>>>> v3.1
 
 #endif

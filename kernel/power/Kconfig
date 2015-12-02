@@ -293,7 +293,6 @@ config PM_OPP
 
 config PM_CLK
 	def_bool y
-<<<<<<< HEAD
 	depends on PM_RUNTIME && HAVE_CLK
 
 config SUSPEND_TIME
@@ -302,7 +301,6 @@ config SUSPEND_TIME
 	  Prints the time spent in suspend in the kernel log, and
 	  keeps statistics on the time spent in suspend in
 	  /sys/kernel/debug/suspend_time
-=======
 	depends on PM && HAVE_CLK
 
 config PM_GENERIC_DOMAINS
@@ -312,4 +310,3 @@ config PM_GENERIC_DOMAINS
 config PM_GENERIC_DOMAINS_RUNTIME
 	def_bool y
 	depends on PM_RUNTIME && PM_GENERIC_DOMAINS
->>>>>>> v3.1

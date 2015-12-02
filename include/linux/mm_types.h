@@ -41,7 +41,6 @@ struct page {
 	/* First double word block */
 	unsigned long flags;		/* Atomic flags, some possibly
 					 * updated asynchronously */
-<<<<<<< HEAD
 	atomic_t _count;		/* Usage count, see below. */
 	union {
 		/*
@@ -65,7 +64,7 @@ struct page {
 		struct {		/* SLUB */
 			u16 inuse;
 			u16 objects;
-=======
+
 	struct address_space *mapping;	/* If low bit clear, points to
 					 * inode address_space, or NULL.
 					 * If page mapped as anonymous
@@ -100,7 +99,6 @@ struct page {
 				};
 				atomic_t _count;		/* Usage count, see below. */
 			};
->>>>>>> v3.1
 		};
 	};
 
