@@ -40,30 +40,7 @@ struct address_space;
 struct page {
 	/* First double word block */
 	unsigned long flags;		/* Atomic flags, some possibly
-					 * updated asynchronously */
-	atomic_t _count;		/* Usage count, see below. */
-	union {
-		/*
-		 * Count of ptes mapped in
-		 * mms, to show when page is
-		 * mapped & limit reverse map
-		 * searches.
-		 *
-		 * Used also for tail pages
-		 * refcounting instead of
-		 * _count. Tail pages cannot
-		 * be mapped and keeping the
-		 * tail page _count zero at
-		 * all times guarantees
-		 * get_page_unless_zero() will
-		 * never succeed on tail
-		 * pages.
-		 */
-		atomic_t _mapcount;
-
-		struct {		/* SLUB */
-			u16 inuse;
-			u16 objects;
+					 * updated asynchronously */		
 
 	struct address_space *mapping;	/* If low bit clear, points to
 					 * inode address_space, or NULL.
