@@ -734,7 +734,7 @@ static struct regulator_init_data aries_buck1_data = {
 	.constraints	= {
 		.name		= "VDD_ARM",
 		.min_uV		= 750000,
-		.max_uV		= 1500000,
+		.max_uV		= 1600000,
 		.apply_uV	= 1,
 		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE |
 				  REGULATOR_CHANGE_STATUS,
