@@ -427,35 +427,35 @@ static struct s5pv210_cpufreq_voltage smdkc110_cpufreq_volt[] = {
 	}, {
 		.freq	= 1300000,
 		.varm	= DVSARM1,
-		.vint	= DVSINT0,
+		.vint	= DVSINT1,
 	}, {
 		.freq	= 1200000,
 		.varm	= DVSARM2,
-		.vint	= DVSINT1,
+		.vint	= DVSINT2,
 	}, {
 		.freq	= 1100000,
 		.varm	= DVSARM3,
-		.vint	= DVSINT1,
+		.vint	= DVSINT2,
 	}, {
 		.freq	= 1000000,
 		.varm	= DVSARM4,
-		.vint	= DVSINT2,
+		.vint	= DVSINT3,
 	}, {
 		.freq	=  800000,
 		.varm	= DVSARM5,
-		.vint	= DVSINT2,
+		.vint	= DVSINT3,
 	}, {
 		.freq	=  400000,
 		.varm	= DVSARM6,
-		.vint	= DVSINT2,
+		.vint	= DVSINT3,
 	}, {
 		.freq	=  200000,
 		.varm	= DVSARM7,
-		.vint	= DVSINT2,
+		.vint	= DVSINT3,
 	}, {
 		.freq	=  100000,
 		.varm	= DVSARM7,
-		.vint	= DVSINT3,
+		.vint	= DVSINT4,
 	},
 };
 
