@@ -25,6 +25,9 @@
  * $Id: dhd_linux.c,v 1.65.4.9.2.12.2.104.4.40 2011/02/03 19:55:18 Exp $
  */
 
+#ifdef CONFIG_WIFI_CONTROL_FUNC
+#include <linux/platform_device.h>
+#endif
 #include <typedefs.h>
 #include <linuxver.h>
 #include <osl.h>
@@ -42,6 +45,7 @@
 #include <linux/fs.h>
 #include <linux/inetdevice.h>
 #include <linux/mutex.h>
+#include <linux/sched.h>
 
 #include <asm/uaccess.h>
 #include <asm/unaligned.h>
@@ -57,17 +61,20 @@
 #include <dhd_proto.h>
 #include <dhd_dbg.h>
 #include <wl_iw.h>
+
+#include "bcmon.h"
+
 #ifdef CONFIG_HAS_WAKELOCK
 #include <linux/wakelock.h>
 #endif
-#ifdef CUSTOMER_HW2
-#include <linux/platform_device.h>
-#ifdef CONFIG_WIFI_CONTROL_FUNC
+#if defined(CUSTOMER_HW2) && defined(CONFIG_WIFI_CONTROL_FUNC)
 #include <linux/wlan_plat.h>
-static struct wifi_platform_data *wifi_control_data = NULL;
-#endif
+
 struct semaphore wifi_control_sem;
 
+struct dhd_bus *g_bus;
+
+static struct wifi_platform_data *wifi_control_data = NULL;
 static struct resource *wifi_irqres = NULL;
 
 int wifi_get_irq_number(unsigned long *irq_flags_ptr)
@@ -86,22 +93,18 @@ int wifi_get_irq_number(unsigned long *irq_flags_ptr)
 int wifi_set_carddetect(int on)
 {
 	printk("%s = %d\n", __FUNCTION__, on);
-#ifdef CONFIG_WIFI_CONTROL_FUNC
 	if (wifi_control_data && wifi_control_data->set_carddetect) {
 		wifi_control_data->set_carddetect(on);
 	}
-#endif
 	return 0;
 }
 
 int wifi_set_power(int on, unsigned long msec)
 {
 	printk("%s = %d\n", __FUNCTION__, on);
-#ifdef CONFIG_WIFI_CONTROL_FUNC
 	if (wifi_control_data && wifi_control_data->set_power) {
 		wifi_control_data->set_power(on);
 	}
-#endif
 	if (msec)
 		mdelay(msec);
 	return 0;
@@ -110,11 +113,9 @@ int wifi_set_power(int on, unsigned long msec)
 int wifi_set_reset(int on, unsigned long msec)
 {
 	DHD_TRACE(("%s = %d\n", __FUNCTION__, on));
-#ifdef CONFIG_WIFI_CONTROL_FUNC
 	if (wifi_control_data && wifi_control_data->set_reset) {
 		wifi_control_data->set_reset(on);
 	}
-#endif
 	if (msec)
 		mdelay(msec);
 	return 0;
@@ -125,38 +126,31 @@ int wifi_get_mac_addr(unsigned char *buf)
 	DHD_TRACE(("%s\n", __FUNCTION__));
 	if (!buf)
 		return -EINVAL;
-#ifdef CONFIG_WIFI_CONTROL_FUNC
 	if (wifi_control_data && wifi_control_data->get_mac_addr) {
 		return wifi_control_data->get_mac_addr(buf);
 	}
-#endif
 	return -EOPNOTSUPP;
 }
 
 void *wifi_get_country_code(char *ccode)
 {
 	DHD_TRACE(("%s\n", __FUNCTION__));
-#ifdef CONFIG_WIFI_CONTROL_FUNC
 	if (!ccode)
 		return NULL;
 	if (wifi_control_data && wifi_control_data->get_country_code) {
 		return wifi_control_data->get_country_code(ccode);
 	}
-#endif
 	return NULL;
 }
 
 static int wifi_probe(struct platform_device *pdev)
 {
-#ifdef CONFIG_WIFI_CONTROL_FUNC
 	struct wifi_platform_data *wifi_ctrl =
 		(struct wifi_platform_data *)(pdev->dev.platform_data);
 
-	wifi_control_data = wifi_ctrl;
-#endif
-
 	DHD_TRACE(("## %s\n", __FUNCTION__));
 	wifi_irqres = platform_get_resource_byname(pdev, IORESOURCE_IRQ, "bcm4329_wlan_irq");
+	wifi_control_data = wifi_ctrl;
 
 	wifi_set_power(1, 0);	/* Power On */
 	wifi_set_carddetect(1);	/* CardDetect (0->1) */
@@ -167,13 +161,12 @@ static int wifi_probe(struct platform_device *pdev)
 
 static int wifi_remove(struct platform_device *pdev)
 {
-#ifdef CONFIG_WIFI_CONTROL_FUNC
 	struct wifi_platform_data *wifi_ctrl =
 		(struct wifi_platform_data *)(pdev->dev.platform_data);
 
-	wifi_control_data = wifi_ctrl;
-#endif
 	DHD_TRACE(("## %s\n", __FUNCTION__));
+	wifi_control_data = wifi_ctrl;
+
 	wifi_set_power(0, 0);	/* Power Off */
 	wifi_set_carddetect(0);	/* CardDetect (1->0) */
 
@@ -219,7 +212,7 @@ void wifi_del_dev(void)
 	DHD_TRACE(("## Unregister platform_driver_register\n"));
 	platform_driver_unregister(&wifi_device);
 }
-#endif /* defined(CUSTOMER_HW2) */
+#endif /* defined(CUSTOMER_HW2) && defined(CONFIG_WIFI_CONTROL_FUNC) */
 
 static int dhd_device_event(struct notifier_block *this, unsigned long event,
 				void *ptr);
@@ -494,7 +487,7 @@ static char dhd_version[] = "Dongle Host Driver, version " EPI_VERSION_STR
 
 
 #if defined(CONFIG_WIRELESS_EXT)
-struct iw_statistics *dhd_get_wireless_stats(struct net_device *dev);
+extern struct iw_statistics *dhd_get_wireless_stats(struct net_device *dev);
 #endif /* defined(CONFIG_WIRELESS_EXT) */
 
 static void dhd_dpc(ulong data);
@@ -795,7 +788,7 @@ _dhd_set_multicast_list(dhd_info_t *dhd, int ifidx)
 	char *buf, *bufp;
 	uint buflen;
 	int ret;
-
+	DHD_TRACE("_dhd_set_multicast_list: enter!\n");
 	ASSERT(dhd && dhd->iflist[ifidx]);
 	dev = dhd->iflist[ifidx]->net;
 
@@ -938,7 +931,7 @@ _dhd_set_mac_address(dhd_info_t *dhd, int ifidx, struct ether_addr *addr)
 }
 
 #ifdef SOFTAP
-extern struct net_device *ap_net_dev;
+struct net_device *ap_net_dev = NULL;
 /* semaphore that the soft AP CODE waits on */
 extern struct semaphore ap_eth_sema;
 #endif
@@ -984,7 +977,7 @@ dhd_op_if(dhd_if_t *ifp)
 					__FUNCTION__, err));
 				ret = -EOPNOTSUPP;
 			} else {
-#ifdef SOFTAP
+#if defined(SOFTAP) && defined(CONFIG_WIRELESS_EXT)
 				flags = dhd_os_spin_lock(&dhd->pub);
 				/* save ptr to wl0.1 netdev for use in wl_iw.c  */
 				ap_net_dev = ifp->net;
@@ -1256,18 +1249,18 @@ dhd_txflowcontrol(dhd_pub_t *dhdp, int ifidx, bool state)
 }
 
 void
-dhd_rx_frame(dhd_pub_t *dhdp, int ifidx, void *pktbuf, int numpkt)
+dhd_rx_frame(dhd_pub_t *dhdp, int ifidx, void *pktbuf, int numpkt, int chan)
 {
 	dhd_info_t *dhd = (dhd_info_t *)dhdp->info;
 	struct sk_buff *skb;
-	uchar *eth;
-	uint len;
+	//uchar *eth;
+	//uint len;
 	void * data, *pnext, *save_pktbuf;
 	int i;
 	dhd_if_t *ifp;
 	wl_event_msg_t event;
 
-	DHD_TRACE(("%s: Enter\n", __FUNCTION__));
+	DHD_TRACE(("%s: Enter, chan=%d\n", __FUNCTION__, chan));
 
 	save_pktbuf = pktbuf;
 
@@ -1288,8 +1281,7 @@ dhd_rx_frame(dhd_pub_t *dhdp, int ifidx, void *pktbuf, int numpkt)
 		 * we set the 'net->hard_header_len' to ETH_HLEN + extra space required
 		 * for BDC, Hardware header etc. and not just the ETH_HLEN
 		 */
-		eth = skb->data;
-		len = skb->len;
+
 
 		ifp = dhd->iflist[ifidx];
 		if (ifp == NULL)
@@ -1297,17 +1289,39 @@ dhd_rx_frame(dhd_pub_t *dhdp, int ifidx, void *pktbuf, int numpkt)
 
 		ASSERT(ifp);
 		skb->dev = ifp->net;
-		skb->protocol = eth_type_trans(skb, skb->dev);
+
+		if (chan==15) {
+			skb = bcmon_decode_skb(skb);
+			DHD_TRACE(("%s: Decoding bcmon packet\n", __FUNCTION__));
+			//prhex("Dumping...", skb->data, skb->len);
+			
+			if(skb==0)
+			{
+				PKTFREE(dhdp->osh, skb, FALSE);
+				return;
+			}
+			//pcap_dump(skb->data, skb->len); // The place to dump!
+			/*
+			skb_set_mac_header(skb, 0);
+			skb->ip_summed = CHECKSUM_UNNECESSARY;
+			skb->pkt_type = PACKET_OTHERHOST;
+			skb->protocol = htons(ETH_P_802_2);
+			*/
+	  }else{
+			PKTFREE(dhdp->osh, skb, FALSE);
+			return;
+	  }
+			skb->protocol = eth_type_trans(skb, skb->dev);
+		//}
 
 		if (skb->pkt_type == PACKET_MULTICAST) {
 			dhd->pub.rx_multicast++;
 		}
 
-		skb->data = eth;
-		skb->len = len;
-
+		if (chan!=15) {
 		/* Strip header, count, deliver upward */
-		skb_pull(skb, ETH_HLEN);
+			skb_pull(skb, ETH_HLEN);
+		}
 
 		/* Process special event packets and then discard them */
 		if (ntoh16(skb->protocol) == ETHER_TYPE_BRCM)
@@ -1330,6 +1344,7 @@ dhd_rx_frame(dhd_pub_t *dhdp, int ifidx, void *pktbuf, int numpkt)
 		dhdp->dstats.rx_bytes += skb->len;
 		dhdp->rx_packets++; /* Local count */
 
+		
 		if (in_interrupt()) {
 			netif_rx(skb);
 		} else {
@@ -1944,8 +1959,10 @@ dhd_open(struct net_device *net)
 	int ifidx;
 
 	/*  Force start if ifconfig_up gets called before START command */
+#if defined(CONFIG_WIRELESS_EXT)
 	wl_control_wl_start(net);
 
+#endif 
 	ifidx = dhd_net2idx(dhd, net);
 	DHD_TRACE(("%s: ifidx %d\n", __FUNCTION__, ifidx));
 
@@ -2195,6 +2212,9 @@ dhd_attach(osl_t *osh, struct dhd_bus *bus, uint bus_hdrlen)
 	 */
 	memcpy(netdev_priv(net), &dhd, sizeof(dhd));
 
+#if defined(CUSTOMER_HW2) && defined(CONFIG_WIFI_CONTROL_FUNC)
+	g_bus = bus;
+#endif
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)) && defined(CONFIG_PM_SLEEP)
 	register_pm_notifier(&dhd_sleep_pm_notifier);
 #endif /*  (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)) && defined(CONFIG_PM_SLEEP) */
@@ -2413,6 +2433,8 @@ static int dhd_device_event(struct notifier_block *this, unsigned long event,
 	return NOTIFY_DONE;
 }
 
+#define ARPHRD_IEEE80211_RADIOTAP 803
+
 int
 dhd_net_attach(dhd_pub_t *dhdp, int ifidx)
 {
@@ -2476,7 +2498,7 @@ dhd_net_attach(dhd_pub_t *dhdp, int ifidx)
 	dhd->pub.rxsz = net->mtu + net->hard_header_len + dhd->pub.hdrlen;
 
 	memcpy(net->dev_addr, temp_addr, ETHER_ADDR_LEN);
-
+	net->type = ARPHRD_IEEE80211_RADIOTAP;
 	if (register_netdev(net) != 0) {
 		DHD_ERROR(("%s: couldn't register the net device\n", __FUNCTION__));
 		goto fail;
@@ -2497,6 +2519,8 @@ dhd_net_attach(dhd_pub_t *dhdp, int ifidx)
 		wl_iw_iscan_set_scan_broadcast_prep(net, 1);
 #endif /* SOFTAP */
 #endif /* CONFIG_FIRST_SCAN */
+#else
+#error CONFIG_WIRELESS_EXT is mandatory for bcmon
 #endif /* CONFIG_WIRELESS_EXT */
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27))
@@ -2635,7 +2659,6 @@ static int __init
 dhd_module_init(void)
 {
 	int error;
-
 	DHD_TRACE(("%s: Enter\n", __FUNCTION__));
 
 	/* Sanity check on the module parameters */
@@ -3138,12 +3161,10 @@ int net_os_set_packet_filter(struct net_device *dev, int val)
 	return ret;
 }
 
-
 void
 dhd_dev_init_ioctl(struct net_device *dev)
 {
 	dhd_info_t *dhd = *(dhd_info_t **)netdev_priv(dev);
-
 	dhd_preinit_ioctls(&dhd->pub);
 }
 
@@ -3197,26 +3218,30 @@ int net_os_send_hang_message(struct net_device *dev)
 	if (dhd) {
 		if (!dhd->pub.hang_was_sent) {
 			dhd->pub.hang_was_sent = 1;
-			ret = wl_iw_send_priv_event(dev, "HANG");
+#if defined(CONFIG_WIRELESS_EXT)
+			wl_iw_send_priv_event(dev, "HANG");
+	/*#else
+			wl_cfg80211_hang(dev, WLAN_REASON_UNSPECIFIED);*/
+#endif
 		}
 	}
 	return ret;
 }
 
-void dhd_bus_country_set(struct net_device *dev, wl_country_t *cspec)
+void dhd_bus_country_set(struct net_device *dev, char *country_code)
 {
 	dhd_info_t *dhd = *(dhd_info_t **)netdev_priv(dev);
 
 	if (dhd && dhd->pub.up)
-		memcpy(&dhd->pub.dhd_cspec, cspec, sizeof(wl_country_t));
+		strncpy(dhd->pub.country_code, country_code, WLC_CNTRY_BUF_SZ);
 }
 
 char *dhd_bus_country_get(struct net_device *dev)
 {
 	dhd_info_t *dhd = *(dhd_info_t **)netdev_priv(dev);
 
-	if (dhd && (dhd->pub.dhd_cspec.ccode[0] != 0))
-		return dhd->pub.dhd_cspec.ccode;
+	if (dhd && (dhd->pub.country_code[0] != 0))
+		return dhd->pub.country_code;
 	return NULL;
 }
 

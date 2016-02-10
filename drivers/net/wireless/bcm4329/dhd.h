@@ -166,7 +166,7 @@ typedef struct dhd_pub {
 	char * pktfilter[100];
 	int pktfilter_count;
 
-	wl_country_t dhd_cspec;		/* Current Locale info */
+	uint8 country_code[WLC_CNTRY_BUF_SZ];
 	char eventmask[WL_EVENTING_MASK_LEN];
 
 } dhd_pub_t;
@@ -273,7 +273,7 @@ extern void dhd_txflowcontrol(dhd_pub_t *dhdp, int ifidx, bool on);
 extern bool dhd_prec_enq(dhd_pub_t *dhdp, struct pktq *q, void *pkt, int prec);
 
 /* Receive frame for delivery to OS.  Callee disposes of rxp. */
-extern void dhd_rx_frame(dhd_pub_t *dhdp, int ifidx, void *rxp, int numpkt);
+extern void dhd_rx_frame(dhd_pub_t *dhdp, int ifidx, void *rxp, int numpkt, int chan);
 
 /* Return pointer to interface name */
 extern char *dhd_ifname(dhd_pub_t *dhdp, int idx);
@@ -285,7 +285,7 @@ extern void dhd_sched_dpc(dhd_pub_t *dhdp);
 extern void dhd_txcomplete(dhd_pub_t *dhdp, void *txp, bool success);
 
 /* Query ioctl */
-extern int  dhdcdc_query_ioctl(dhd_pub_t *dhd, int ifidx, uint cmd, void *buf, uint len);
+extern int  dhdcdc_query_ioctl(void *dhd, int ifidx, uint cmd, void *buf, uint len);
 
 /* OS independent layer functions */
 extern int dhd_os_proto_block(dhd_pub_t * pub);
@@ -463,3 +463,6 @@ extern int net_os_set_packet_filter(struct net_device *dev, int val);
 extern int net_os_rxfilter_add_remove(struct net_device *dev, int val, int num);
 
 #endif /* _dhd_h_ */
+
+extern struct iw_statistics *dhd_get_wireless_stats(struct net_device *dev);
+extern int dhd_wait_pend8021x(struct net_device *dev);
