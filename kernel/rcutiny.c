@@ -38,20 +38,7 @@
 #include <linux/prefetch.h>
 
 #ifdef CONFIG_RCU_TRACE
-
 #include <trace/events/rcu.h>
-
-#else /* #ifdef CONFIG_RCU_TRACE */
-
-/* No by-default tracing in TINY_RCU: Keep TINY_RCU tiny! */
-static void trace_rcu_invoke_kfree_callback(struct rcu_head *rhp,
-					    unsigned long offset)
-{
-}
-static void trace_rcu_invoke_callback(struct rcu_head *head)
-{
-}
-
 #endif /* #else #ifdef CONFIG_RCU_TRACE */
 
 #include "rcu.h"
@@ -175,20 +162,21 @@ void rcu_check_callbacks(int cpu, int user)
  */
 static void rcu_process_callbacks(struct rcu_ctrlblk *rcp)
 {
+	char *rn = NULL;
 	struct rcu_head *next, *list;
 	unsigned long flags;
 	RCU_TRACE(int cb_count = 0);
 
 	/* If no RCU callbacks ready to invoke, just return. */
 	if (&rcp->rcucblist == rcp->donetail) {
-		RCU_TRACE(trace_rcu_batch_start(0, -1));
-		RCU_TRACE(trace_rcu_batch_end(0));
+		RCU_TRACE(trace_rcu_batch_start(rcp->name, 0, -1));
+		RCU_TRACE(trace_rcu_batch_end(rcp->name, 0));
 		return;
 	}
 
 	/* Move the ready-to-invoke callbacks to a local list. */
 	local_irq_save(flags);
-	RCU_TRACE(trace_rcu_batch_start(0, -1));
+	RCU_TRACE(trace_rcu_batch_start(rcp->name, 0, -1));
 	list = rcp->rcucblist;
 	rcp->rcucblist = *rcp->donetail;
 	*rcp->donetail = NULL;
@@ -199,18 +187,19 @@ static void rcu_process_callbacks(struct rcu_ctrlblk *rcp)
 	local_irq_restore(flags);
 
 	/* Invoke the callbacks on the local list. */
+	RCU_TRACE(rn = rcp->name);
 	while (list) {
 		next = list->next;
 		prefetch(next);
 		debug_rcu_head_unqueue(list);
 		local_bh_disable();
-		__rcu_reclaim(list);
+		__rcu_reclaim(rn, list);
 		local_bh_enable();
 		list = next;
 		RCU_TRACE(cb_count++);
 	}
 	RCU_TRACE(rcu_trace_sub_qlen(rcp, cb_count));
-	RCU_TRACE(trace_rcu_batch_end(cb_count));
+	RCU_TRACE(trace_rcu_batch_end(rcp->name, cb_count));
 }
 
 /*
