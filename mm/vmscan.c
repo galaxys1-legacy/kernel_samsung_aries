@@ -2603,6 +2603,10 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
 	unsigned long balanced = 0;
 	bool all_zones_ok = true;
 
+	/* If kswapd has been running too long, just sleep */
+	if (need_resched())
+		return false;
+
 	/* If a direct reclaimer woke kswapd within HZ/10, it's premature */
 	if (remaining)
 		return true;
@@ -2852,11 +2856,11 @@ loop_again:
 		 * OK, kswapd is getting into trouble.  Take a nap, then take
 		 * another pass across the zones.
 		 */
-		if (total_scanned && (priority < DEF_PRIORITY - 2)) {
+		if (total_scanned && (priority < DEF_PRIORITY - 8)) {
 			if (has_under_min_watermark_zone)
 				count_vm_event(KSWAPD_SKIP_CONGESTION_WAIT);
 			else
-				congestion_wait(BLK_RW_ASYNC, HZ/10);
+				congestion_wait_kswapd(BLK_RW_ASYNC, HZ/60);
 		}
 
 		/*
