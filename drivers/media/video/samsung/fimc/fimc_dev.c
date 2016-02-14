@@ -1001,22 +1001,36 @@ static int fimc_open(struct file *filp)
 		goto kzalloc_err;
 	}
 
-	if (ctrl->id == 1) {
+	if (in_use == 0) {
             
 		ret = s5p_alloc_media_memory_bank(S5P_MDEV_FIMC2, 0);
+                printk(KERN_INFO "FIMC%d: CMA starting");
                 
                 if (ret < 0) {
-                        printk(KERN_INFO "FIMC%d: dma_alloc_coherent failed\n",
-								ctrl->id);
  			ret = -ENOMEM;
  			goto dma_alloc_err;
  		}
  
 		ret = s5p_alloc_media_memory_bank(S5P_MDEV_FIMC2, 1);
+                printk(KERN_INFO "FIMC%d: CMA allocating");
                 
  		if (ret < 0) {
-                        printk(KERN_INFO "FIMC%d: dma_alloc_coherent failed\n",
-								ctrl->id);
+ 			ret = -ENOMEM;
+ 			goto dma_alloc_err;
+ 		}
+ 		
+ 		ret = s5p_alloc_media_memory_bank(S5P_MDEV_FIMC0, 0);
+                printk(KERN_INFO "FIMC%d: CMA starting");
+                
+                if (ret < 0) {
+ 			ret = -ENOMEM;
+ 			goto dma_alloc_err;
+ 		}
+ 
+		ret = s5p_alloc_media_memory_bank(S5P_MDEV_FIMC0, 1);
+                printk(KERN_INFO "FIMC%d: CMA allocating");
+                
+ 		if (ret < 0) {
  			ret = -ENOMEM;
  			goto dma_alloc_err;
  		}
@@ -1077,6 +1091,8 @@ ctx_err:
 	kfree(prv_data);
         
 dma_alloc_err:
+        printk(KERN_INFO "FIMC%d: dma_alloc_coherent failed\n",
+                                                ctrl->id);
 	kfree(prv_data);
 
 kzalloc_err:
@@ -1248,13 +1264,13 @@ static int fimc_release(struct file *filp)
 #ifdef CONFIG_MACH_P1
 	ctrl->ctx_busy[ctx_id] = 0;
 #endif
-	mutex_unlock(&ctrl->lock);
         
-        if (ctrl->id == 1) {
-		s5p_release_media_memory_bank(S5P_MDEV_FIMC2, 0);
- +		s5p_release_media_memory_bank(S5P_MDEV_FIMC2, 1);
-
-	}
+	s5p_release_media_memory_bank(S5P_MDEV_FIMC2, 0);
+        s5p_release_media_memory_bank(S5P_MDEV_FIMC2, 1);
+        s5p_release_media_memory_bank(S5P_MDEV_FIMC0, 0);
+        s5p_release_media_memory_bank(S5P_MDEV_FIMC0, 1);
+        
+        mutex_unlock(&ctrl->lock);
 
 	fimc_info1("%s released.\n", ctrl->name);
 
