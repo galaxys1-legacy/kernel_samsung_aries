@@ -1081,14 +1081,6 @@ dma_alloc_err:
         printk(KERN_INFO "FIMC%d: dma_alloc_coherent failed\n",
                                                 ctrl->id);
         kfree(prv_data);
-        
-        if (ctrl->id == 2){
-        s5p_release_media_memory_bank(S5P_MDEV_FIMC2, 1);
-        }
-        
-        if (ctrl->id == 0){
-        s5p_release_media_memory_bank(S5P_MDEV_FIMC0, 1);
-        }
 
 kzalloc_err:
 	atomic_dec(&ctrl->in_use);
@@ -1261,9 +1253,14 @@ static int fimc_release(struct file *filp)
 #endif
         
         mutex_unlock(&ctrl->lock);
-                
+        
+        if (ctrl->id == 2) {
         s5p_release_media_memory_bank(S5P_MDEV_FIMC2, 1);
+        }
+        
+        if (ctrl->id == 0) {
         s5p_release_media_memory_bank(S5P_MDEV_FIMC0, 1);
+        }
 
 	fimc_info1("%s released.\n", ctrl->name);
 
