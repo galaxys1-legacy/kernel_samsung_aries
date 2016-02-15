@@ -1001,36 +1001,23 @@ static int fimc_open(struct file *filp)
 		goto kzalloc_err;
 	}
 
-	if (in_use == 0) {
+	if (ctrl->id == 2) {
             
-		ret = s5p_alloc_media_memory_bank(S5P_MDEV_FIMC2, 0);
-                printk(KERN_INFO "FIMC%d: CMA starting");
-                
-                if (ret < 0) {
- 			ret = -ENOMEM;
- 			goto dma_alloc_err;
- 		}
- 
 		ret = s5p_alloc_media_memory_bank(S5P_MDEV_FIMC2, 1);
-                printk(KERN_INFO "FIMC%d: CMA allocating");
-                
- 		if (ret < 0) {
- 			ret = -ENOMEM;
- 			goto dma_alloc_err;
- 		}
- 		
- 		ret = s5p_alloc_media_memory_bank(S5P_MDEV_FIMC0, 0);
-                printk(KERN_INFO "FIMC%d: CMA starting");
+                printk(KERN_INFO "FIMC%d: CMA starting\n",ctrl->id);
                 
                 if (ret < 0) {
  			ret = -ENOMEM;
  			goto dma_alloc_err;
  		}
- 
-		ret = s5p_alloc_media_memory_bank(S5P_MDEV_FIMC0, 1);
-                printk(KERN_INFO "FIMC%d: CMA allocating");
+        }
+        
+        if (ctrl->id == 0) {
+            
+ 		ret = s5p_alloc_media_memory_bank(S5P_MDEV_FIMC0, 1);
+                printk(KERN_INFO "FIMC%d: CMA starting\n",ctrl->id);
                 
- 		if (ret < 0) {
+                if (ret < 0) {
  			ret = -ENOMEM;
  			goto dma_alloc_err;
  		}
@@ -1093,6 +1080,14 @@ ctx_err:
 dma_alloc_err:
         printk(KERN_INFO "FIMC%d: dma_alloc_coherent failed\n",
                                                 ctrl->id);
+        if (ctrl->id == 2){
+        s5p_release_media_memory_bank(S5P_MDEV_FIMC2, 1);
+        }
+        
+        if (ctrl->id == 0){
+        s5p_release_media_memory_bank(S5P_MDEV_FIMC0, 1);
+        }
+        
 	kfree(prv_data);
 
 kzalloc_err:
@@ -1265,9 +1260,7 @@ static int fimc_release(struct file *filp)
 	ctrl->ctx_busy[ctx_id] = 0;
 #endif
         
-	s5p_release_media_memory_bank(S5P_MDEV_FIMC2, 0);
         s5p_release_media_memory_bank(S5P_MDEV_FIMC2, 1);
-        s5p_release_media_memory_bank(S5P_MDEV_FIMC0, 0);
         s5p_release_media_memory_bank(S5P_MDEV_FIMC0, 1);
         
         mutex_unlock(&ctrl->lock);
