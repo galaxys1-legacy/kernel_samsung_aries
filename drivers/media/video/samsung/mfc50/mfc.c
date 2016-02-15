@@ -40,6 +40,7 @@
 #include <linux/slab.h>
 #include <linux/clk.h>
 #include <linux/dma-mapping.h>
+#include <linux/delay.h>
 
 #include <linux/sched.h>
 #include <linux/firmware.h>
@@ -529,6 +530,22 @@ static int mfc_mmap(struct file *filp, struct vm_area_struct *vma)
 
 	return 0;
 }
+
+static int mfc_open_with_retry(struct inode *inode, struct file *file)
+{
+	int ret;
+	int i = 0;
+
+	ret = mfc_open(inode, file);
+
+	while (ret == -ENOMEM && i++ < 10) {
+		msleep(1000);
+		ret = mfc_open(inode, file);
+	}
+
+	return ret;
+}
+#define MFC_OPEN mfc_open_with_retry
 
 static const struct file_operations mfc_fops = {
 	.owner      = THIS_MODULE,
