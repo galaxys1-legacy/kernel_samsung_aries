@@ -1004,7 +1004,7 @@ static int fimc_open(struct file *filp)
 	if (ctrl->id == 2) {
             
 		ret = s5p_alloc_media_memory_bank(S5P_MDEV_FIMC2, 1);
-                printk(KERN_INFO "FIMC%d: CMA starting\n",ctrl->id);
+                printk(KERN_INFO "FIMC%d: CMA allocating\n",ctrl->id);
                 
                 if (ret < 0) {
  			ret = -ENOMEM;
@@ -1015,7 +1015,7 @@ static int fimc_open(struct file *filp)
         if (ctrl->id == 0) {
             
  		ret = s5p_alloc_media_memory_bank(S5P_MDEV_FIMC0, 1);
-                printk(KERN_INFO "FIMC%d: CMA starting\n",ctrl->id);
+                printk(KERN_INFO "FIMC%d: CMA allocating\n",ctrl->id);
                 
                 if (ret < 0) {
  			ret = -ENOMEM;
@@ -1080,6 +1080,8 @@ ctx_err:
 dma_alloc_err:
         printk(KERN_INFO "FIMC%d: dma_alloc_coherent failed\n",
                                                 ctrl->id);
+        kfree(prv_data);
+        
         if (ctrl->id == 2){
         s5p_release_media_memory_bank(S5P_MDEV_FIMC2, 1);
         }
@@ -1087,8 +1089,6 @@ dma_alloc_err:
         if (ctrl->id == 0){
         s5p_release_media_memory_bank(S5P_MDEV_FIMC0, 1);
         }
-        
-	kfree(prv_data);
 
 kzalloc_err:
 	atomic_dec(&ctrl->in_use);
@@ -1260,10 +1260,10 @@ static int fimc_release(struct file *filp)
 	ctrl->ctx_busy[ctx_id] = 0;
 #endif
         
+        mutex_unlock(&ctrl->lock);
+                
         s5p_release_media_memory_bank(S5P_MDEV_FIMC2, 1);
         s5p_release_media_memory_bank(S5P_MDEV_FIMC0, 1);
-        
-        mutex_unlock(&ctrl->lock);
 
 	fimc_info1("%s released.\n", ctrl->name);
 
