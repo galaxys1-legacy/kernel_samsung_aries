@@ -34,6 +34,7 @@
 #include <plat/fimc.h>
 #include <linux/videodev2_samsung.h>
 #include <linux/delay.h>
+#include <linux/cma.h>
 #include <plat/regs-fimc.h>
 
 #include "fimc.h"

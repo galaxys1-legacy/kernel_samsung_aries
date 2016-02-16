@@ -41,6 +41,7 @@
 #include <linux/clk.h>
 #include <linux/dma-mapping.h>
 #include <linux/delay.h>
+#include <linux/cma.h>
 
 #include <linux/sched.h>
 #include <linux/firmware.h>
