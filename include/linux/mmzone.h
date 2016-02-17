@@ -16,7 +16,7 @@
 #include <linux/nodemask.h>
 #include <linux/pageblock-flags.h>
 #include <generated/bounds.h>
-#include <linux/atomic.h>
+#include <asm/atomic.h>
 #include <asm/page.h>
 
 /* Free memory management - zoned buddy allocator.  */
@@ -35,13 +35,23 @@
  */
 #define PAGE_ALLOC_COSTLY_ORDER 3
 
+#ifndef CONFIG_CMA
+
+#define MIGRATE_UNMOVABLE     0
+#define MIGRATE_RECLAIMABLE   1
+#define MIGRATE_MOVABLE       2
+#define MIGRATE_PCPTYPES      3 /* the number of types on the pcp lists */
+#define MIGRATE_RESERVE       3
+#define MIGRATE_ISOLATE       4 /* can't allocate from here */
+#define MIGRATE_TYPES         5
+
+#else
 enum {
 	MIGRATE_UNMOVABLE,
 	MIGRATE_RECLAIMABLE,
 	MIGRATE_MOVABLE,
-	MIGRATE_PCPTYPES,	/* the number of types on the pcp lists */
+	MIGRATE_PCPTYPES,   /* the number of types on the pcp lists */
 	MIGRATE_RESERVE = MIGRATE_PCPTYPES,
-#ifdef CONFIG_CMA
 	/*
 	 * MIGRATE_CMA migration type is designed to mimic the way
 	 * ZONE_MOVABLE works.  Only movable pages can be allocated
@@ -56,17 +66,14 @@ enum {
 	 * a single pageblock.
 	 */
 	MIGRATE_CMA,
-#endif
-	MIGRATE_ISOLATE,	/* can't allocate from here */
+	MIGRATE_ISOLATE,    /* can't allocate from here */
 	MIGRATE_TYPES
 };
 
-#ifdef CONFIG_CMA
-#  define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
-#  define cma_wmark_pages(zone)	zone->min_cma_pages
-#else
-#  define is_migrate_cma(migratetype) false
-#  define cma_wmark_pages(zone) 0
+bool is_cma_pageblock(struct page *page);
+#define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
+#define cma_wmark_pages(zone) (zone->min_cma_pages)
+
 #endif
 
 #define for_each_migratetype_order(order, type) \
@@ -141,6 +148,9 @@ enum zone_stat_item {
 	NUMA_OTHER,		/* allocation from other node */
 #endif
 	NR_ANON_TRANSPARENT_HUGEPAGES,
+#ifdef CONFIG_CMA
+	NR_FREE_CMA_PAGES,
+#endif
 	NR_VM_ZONE_STAT_ITEMS };
 
 /*
@@ -361,7 +371,8 @@ struct zone {
 	 * CMA needs to increase watermark levels during the allocation
 	 * process to make sure that the system is not starved.
 	 */
-	unsigned long		min_cma_pages;
+	unsigned long       min_cma_pages;
+	bool                cma_alloc;
 #endif
 	struct free_area	free_area[MAX_ORDER];
 

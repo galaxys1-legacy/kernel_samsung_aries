@@ -451,7 +451,11 @@ void put_page(struct page *page);
 void put_pages_list(struct list_head *pages);
 
 void split_page(struct page *page, unsigned int order);
+#ifndef CONFIG_CMA
 int split_free_page(struct page *page);
+#else
+int split_free_page(struct page *page, bool for_cma);
+#endif
 
 /*
  * Compound pages have a destructor function.  Provide a
