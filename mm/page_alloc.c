@@ -204,6 +204,8 @@ static char * const zone_names[MAX_NR_ZONES] = {
 int min_free_kbytes = 1024;
 int min_free_order_shift = 1;
 
+int extra_free_kbytes = 0;
+
 static unsigned long __meminitdata nr_kernel_pages;
 static unsigned long __meminitdata nr_all_pages;
 static unsigned long __meminitdata dma_reserve;
@@ -770,7 +772,7 @@ void __meminit __free_pages_bootmem(struct page *page, unsigned int order)
 	}
 }
 
-#ifdef CONFIG_DMA_CMA
+#ifdef CONFIG_CMA
 
 struct cma_pageblock {
 	unsigned long start_pfn, end_pfn;
@@ -949,7 +951,7 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
 static int fallbacks[MIGRATE_TYPES][4] = {
 	[MIGRATE_UNMOVABLE]   = { MIGRATE_RECLAIMABLE, MIGRATE_MOVABLE,     MIGRATE_RESERVE },
 	[MIGRATE_RECLAIMABLE] = { MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,     MIGRATE_RESERVE },
-#ifdef CONFIG_DMA_CMA
+#ifdef CONFIG_CMA
 	[MIGRATE_MOVABLE]     = { MIGRATE_CMA,         MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_RESERVE },
 	[MIGRATE_CMA]         = { MIGRATE_RESERVE }, /* Never used */
 #else
@@ -6005,7 +6007,7 @@ out:
 	spin_unlock_irqrestore(&zone->lock, flags);
 }
 
-#ifdef CONFIG_DMA_CMA
+#ifdef CONFIG_CMA
 
 static unsigned long pfn_max_align_down(unsigned long pfn)
 {
