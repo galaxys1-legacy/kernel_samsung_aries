@@ -1987,7 +1987,7 @@ static int __init zcache_comp_init(void)
 					zcache_comp_name);
 	}
 	if (!ret)
-		strcpy(zcache_comp_name, "lzo");
+		strcpy(zcache_comp_name, "lz4");
 	ret = crypto_has_comp(zcache_comp_name, 0, 0);
 	if (!ret) {
 		ret = 1;
