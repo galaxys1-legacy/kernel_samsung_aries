@@ -19,7 +19,6 @@
 #include <linux/pagemap.h>
 #include <linux/init.h>
 #include <linux/highmem.h>
-#include <linux/vmpressure.h>
 #include <linux/vmstat.h>
 #include <linux/file.h>
 #include <linux/writeback.h>
@@ -117,6 +116,11 @@ struct scan_control {
 };
 
 #define lru_to_page(_head) (list_entry((_head)->prev, struct page, lru))
+
+#ifdef CONFIG_ZRAM_FOR_ANDROID
+atomic_t kswapd_thread_on = ATOMIC_INIT(1);
+extern int get_soft_reclaim_status(void);
+#endif /* CONFIG_ZRAM_FOR_ANDROID */
 
 #ifdef ARCH_HAS_PREFETCH
 #define prefetch_prev_lru_page(_page, _base, _field)			\
@@ -254,8 +258,6 @@ unsigned long shrink_slab(struct shrink_control *shrink,
 		int shrink_ret = 0;
 		long nr;
 		long new_nr;
-		long batch_size = shrinker->batch ? shrinker->batch
-						  : SHRINK_BATCH;
 
 		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
 		if (max_pass <= 0)
@@ -309,19 +311,19 @@ unsigned long shrink_slab(struct shrink_control *shrink,
 					nr_pages_scanned, lru_pages,
 					max_pass, delta, total_scan);
 
-		while (total_scan >= batch_size) {
-			int shrink_ret;
+		while (total_scan >= SHRINK_BATCH) {
+			long this_scan = SHRINK_BATCH;
 			int nr_before;
 
 			nr_before = do_shrinker_shrink(shrinker, shrink, 0);
 			shrink_ret = do_shrinker_shrink(shrinker, shrink,
-							batch_size);
+							this_scan);
 			if (shrink_ret == -1)
 				break;
 			if (shrink_ret < nr_before)
 				ret += nr_before - shrink_ret;
-			count_vm_events(SLABS_SCANNED, batch_size);
-			total_scan -= batch_size;
+			count_vm_events(SLABS_SCANNED, this_scan);
+			total_scan -= this_scan;
 
 			cond_resched();
 		}
@@ -729,15 +731,19 @@ static enum page_references page_check_references(struct page *page,
 		 */
 		SetPageReferenced(page);
 
+#ifndef CONFIG_DMA_CMA
+		if (referenced_page)
+			return PAGEREF_ACTIVATE;
+#else
 		if (referenced_page || referenced_ptes > 1)
 			return PAGEREF_ACTIVATE;
 
 		/*
 		 * Activate file-backed executable pages after first usage.
-		 */
+		*/
 		if (vm_flags & VM_EXEC)
 			return PAGEREF_ACTIVATE;
-
+#endif
 		return PAGEREF_KEEP;
 	}
 
@@ -987,7 +993,7 @@ cull_mlocked:
 
 activate_locked:
 		/* Not a candidate for swapping, so reclaim swap space. */
-		if (PageSwapCache(page))
+		if (PageSwapCache(page) && vm_swap_full())
 			try_to_free_swap(page);
 		VM_BUG_ON(PageActive(page));
 		SetPageActive(page);
@@ -1056,8 +1062,12 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
 	 * unevictable; only give shrink_page_list evictable pages.
 	 */
 	if (PageUnevictable(page))
+#ifndef CONFIG_DMA_CMA
 		return ret;
-
+#else
+		printk(KERN_ERR "%s[%d] Unevictable page %p\n",
+					__func__, __LINE__, page);
+#endif
 	ret = -EBUSY;
 
 	/*
@@ -1638,15 +1648,20 @@ zone_id_shrink_pagelist(struct zone *zone, struct list_head *page_list)
 	};
 
 	spin_lock_irq(&zone->lru_lock);
+
 	update_isolated_counts(zone, &sc, &nr_anon, &nr_file, page_list);
+
 	spin_unlock_irq(&zone->lru_lock);
 
 	nr_reclaimed = shrink_page_list(page_list, zone, &sc);
+
 	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
+
 	putback_lru_pages(zone, &sc, nr_anon, nr_file, page_list);
 
 	return nr_reclaimed;
 }
+
 EXPORT_SYMBOL(zone_id_shrink_pagelist);
 #endif /* CONFIG_ZRAM_FOR_ANDROID */
 
@@ -2163,10 +2178,6 @@ restart:
 		goto restart;
 
 	throttle_vm_writeout(sc->gfp_mask);
-
-	vmpressure(sc->gfp_mask, sc->mem_cgroup,
-		   sc->nr_scanned - nr_scanned,
-		   sc->nr_reclaimed - nr_reclaimed);
 }
 
 /* Returns true if compaction should go ahead for a high-order request */
@@ -2203,33 +2214,6 @@ static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
 		return false;
 
 	return watermark_ok;
-}
-
-/*
- * Helper functions to adjust nice level of kswapd, based on the priority of
- * the task (p) that called it. If it is already higher priority we do not
- * demote its nice level since it is still working on behalf of a higher
- * priority task. With kernel threads we leave it at nice 0.
- *
- * We don't ever run kswapd real time, so if a real time task calls kswapd we
- * set it to highest SCHED_NORMAL priority.
- */
-static inline int effective_sc_prio(struct task_struct *p)
-{
-	if (likely(p->mm)) {
-		if (rt_task(p))
-			return -20;
-		return task_nice(p);
-	}
-	return 0;
-}
-
-static void set_kswapd_nice(struct task_struct *kswapd, int active)
-{
-	long nice = effective_sc_prio(current);
-
-	if (task_nice(kswapd) > nice || !active)
-		set_user_nice(kswapd, nice);
 }
 
 /*
@@ -2370,7 +2354,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
 		count_vm_event(ALLOCSTALL);
 
 	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
-		vmpressure_prio(sc->gfp_mask, sc->mem_cgroup, priority);
 		sc->nr_scanned = 0;
 		if (!priority)
 			disable_swap_token(sc->mem_cgroup);
@@ -2602,10 +2585,6 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
 	int i;
 	unsigned long balanced = 0;
 	bool all_zones_ok = true;
-
-	/* If kswapd has been running too long, just sleep */
-	if (need_resched())
-		return false;
 
 	/* If a direct reclaimer woke kswapd within HZ/10, it's premature */
 	if (remaining)
@@ -2856,11 +2835,11 @@ loop_again:
 		 * OK, kswapd is getting into trouble.  Take a nap, then take
 		 * another pass across the zones.
 		 */
-		if (total_scanned && (priority < DEF_PRIORITY - 8)) {
+		if (total_scanned && (priority < DEF_PRIORITY - 2)) {
 			if (has_under_min_watermark_zone)
 				count_vm_event(KSWAPD_SKIP_CONGESTION_WAIT);
 			else
-				congestion_wait_kswapd(BLK_RW_ASYNC, HZ/60);
+				congestion_wait(BLK_RW_ASYNC, HZ/10);
 		}
 
 		/*
@@ -2976,6 +2955,11 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order, int classzone_idx)
 		 * per-cpu vmstat threshold while kswapd is awake and restore
 		 * them before going back to sleep.
 		 */
+
+#ifdef CONFIG_ZRAM_FOR_ANDROID
+		atomic_set(&kswapd_thread_on,0);
+#endif /* CONFIG_ZRAM_FOR_ANDROID */
+
 		set_pgdat_percpu_threshold(pgdat, calculate_normal_threshold);
 
 		if (!kthread_should_stop())
@@ -3081,6 +3065,10 @@ static int kswapd(void *p)
 		if (kthread_should_stop())
 			break;
 
+#ifdef CONFIG_ZRAM_FOR_ANDROID
+		atomic_set(&kswapd_thread_on, 1);
+#endif /* CONFIG_ZRAM_FOR_ANDROID */
+
 		/*
 		 * We can speed up thawing tasks if we don't call balance_pgdat
 		 * after returning from the refrigerator
@@ -3103,7 +3091,6 @@ static int kswapd(void *p)
 void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
 {
 	pg_data_t *pgdat;
-	int active;
 
 	if (!populated_zone(zone))
 		return;
@@ -3115,9 +3102,7 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
 		pgdat->kswapd_max_order = order;
 		pgdat->classzone_idx = min(pgdat->classzone_idx, classzone_idx);
 	}
-	active = waitqueue_active(&pgdat->kswapd_wait);
-	set_kswapd_nice(pgdat->kswapd, active);
-	if (!active)
+	if (!waitqueue_active(&pgdat->kswapd_wait))
 		return;
 	if (zone_watermark_ok_safe(zone, order, low_wmark_pages(zone), 0, 0))
 		return;
@@ -3154,12 +3139,138 @@ unsigned long zone_reclaimable_pages(struct zone *zone)
 	nr = zone_page_state(zone, NR_ACTIVE_FILE) +
 	     zone_page_state(zone, NR_INACTIVE_FILE);
 
+#ifndef CONFIG_ZRAM_FOR_ANDROID
 	if (nr_swap_pages > 0)
 		nr += zone_page_state(zone, NR_ACTIVE_ANON) +
 		      zone_page_state(zone, NR_INACTIVE_ANON);
+#endif
 
 	return nr;
 }
+
+#ifdef CONFIG_ZRAM_FOR_ANDROID
+/*
+ * This is the main entry point to direct page reclaim for RTCC.
+ *
+ * If a full scan of the inactive list fails to free enough memory then we
+ * are "out of memory" and something needs to be killed.
+ *
+ * If the caller is !__GFP_FS then the probability of a failure is reasonably
+ * high - the zone may be full of dirty or under-writeback pages, which this
+ * caller can't do much about.  We kick the writeback threads and take explicit
+ * naps in the hope that some of these pages can be written.  But if the
+ * allocating task holds filesystem locks which prevent writeout this might not
+ * work, and the allocation attempt will fail.
+ *
+ * returns:	0, if no pages reclaimed
+ * 		else, the number of pages reclaimed
+ */
+static unsigned long rtcc_do_try_to_free_pages(struct zonelist *zonelist, struct scan_control *sc, struct shrink_control *shrink)
+{
+	int priority;
+	unsigned long total_scanned = 0;
+	unsigned int cpuset_mems_cookie;
+	struct zoneref *z;
+	struct zone *zone;
+	unsigned long writeback_threshold;
+
+  	cpuset_mems_cookie = get_mems_allowed();
+	delayacct_freepages_start();
+
+	if (scanning_global_lru(sc))
+		count_vm_event(ALLOCSTALL);
+
+	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
+		sc->nr_scanned = 0;
+		if (!priority)
+			disable_swap_token(sc->mem_cgroup);
+		shrink_zones(priority, zonelist, sc);
+		total_scanned += sc->nr_scanned;
+		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
+			goto out;
+
+		/*
+		 * Try to write back as many pages as we just scanned.  This
+		 * tends to cause slow streaming writers to write data to the
+		 * disk smoothly, at the dirtying rate, which is nice.   But
+		 * that's undesirable in laptop mode, where we *want* lumpy
+		 * writeout.  So in laptop mode, write out the whole world.
+		 */
+		writeback_threshold = sc->nr_to_reclaim + sc->nr_to_reclaim / 2;
+		if (total_scanned > writeback_threshold) {
+			wakeup_flusher_threads(laptop_mode ? 0 : total_scanned);
+			sc->may_writepage = 1;
+		}
+
+		/* Take a nap, wait for some writeback to complete */
+		if (!sc->hibernation_mode && sc->nr_scanned &&
+		    priority < DEF_PRIORITY - 2) {
+			struct zone *preferred_zone;
+
+			first_zones_zonelist(zonelist, gfp_zone(sc->gfp_mask),
+						&cpuset_current_mems_allowed,
+						&preferred_zone);
+			wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/10);
+		}
+	}
+
+out:
+	delayacct_freepages_end();
+	put_mems_allowed(cpuset_mems_cookie);
+
+	if (sc->nr_reclaimed)
+		return sc->nr_reclaimed;
+
+	/*
+	 * As hibernation is going on, kswapd is freezed so that it can't mark
+	 * the zone into all_unreclaimable. Thus bypassing all_unreclaimable
+	 * check.
+	 */
+	if (oom_killer_disabled)
+		return 0;
+
+	/* top priority shrink_zones still had more to do? don't OOM, then */
+	if (scanning_global_lru(sc) && !all_unreclaimable(zonelist, sc))
+		return 1;
+
+	return 0;
+}
+
+long rtcc_reclaim_pages(long nr_to_reclaim)
+{
+	struct reclaim_state reclaim_state;
+	struct scan_control sc = {
+		.gfp_mask = GFP_KERNEL,
+		.may_swap = 1,
+		.may_unmap = 1,
+		.may_writepage = 1,
+		.nr_to_reclaim = nr_to_reclaim,
+		.swappiness = 100,
+		.order = 0,
+	};
+	struct shrink_control shrink = {
+		.gfp_mask = sc.gfp_mask,
+	};
+	struct zonelist *zonelist = node_zonelist(numa_node_id(), sc.gfp_mask);
+	struct task_struct *p = current;
+	unsigned long nr_reclaimed;
+
+	p->flags |= PF_MEMALLOC;
+	lockdep_set_current_reclaim_state(sc.gfp_mask);
+	reclaim_state.reclaimed_slab = 0;
+	p->reclaim_state = &reclaim_state;
+
+	nr_reclaimed = rtcc_do_try_to_free_pages(zonelist, &sc, &shrink);
+
+	p->reclaim_state = NULL;
+	lockdep_clear_current_reclaim_state();
+	p->flags &= ~PF_MEMALLOC;
+
+	printk("RTCC, reclaim %ld pages\n", nr_reclaimed);
+
+	return nr_reclaimed;
+}
+#endif /* CONFIG_ZRAM_FOR_ANDROID */
 
 #ifdef CONFIG_HIBERNATION
 /*
@@ -3175,7 +3286,11 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
 	struct reclaim_state reclaim_state;
 	struct scan_control sc = {
 		.gfp_mask = GFP_HIGHUSER_MOVABLE,
+#if defined(CONFIG_SLP) && defined(CONFIG_FULL_PAGE_RECLAIM)
+		.may_swap = 0,
+#else
 		.may_swap = 1,
+#endif
 		.may_unmap = 1,
 		.may_writepage = 1,
 		.nr_to_reclaim = nr_to_reclaim,
