@@ -314,6 +314,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
 				printk(KERN_ERR "%s[%d]: 1 ",
 						 __func__, __LINE__);
 				dump_page(page);
+                                printk(KERN_ALERT "Page migration failed");
 			}
 			return -EAGAIN;
 		}
@@ -332,6 +333,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
 		if (is_failed_page(page, pass, tries)) {
 			printk("%s[%d]: 2 ", __func__, __LINE__);
 			dump_page(page);
+                        printk(KERN_ALERT "Page migration failed");
 		}
 		return -EAGAIN;
 	}
@@ -341,6 +343,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
 		if (is_failed_page(page, pass, tries)) {
 			printk("%s[%d]: 3 ", __func__, __LINE__);
 			dump_page(page);
+                        printk(KERN_ALERT "Page migration failed");
 		}
 		return -EAGAIN;
 	}
@@ -529,6 +532,7 @@ static int __migrate_page(struct address_space *mapping,
 		if (is_failed_page(page, pass, tries)) {
 			printk("%s[%d]: 1 ", __func__, __LINE__);
 			dump_page(page);
+                        printk(KERN_ALERT "Page migration failed");
 		}
 		return rc;
 	}
@@ -660,6 +664,7 @@ static int fallback_migrate_page(struct address_space *mapping,
 		if (is_failed_page(page, pass, tries)) {
 			printk("%s[%d] 1 ", __func__, __LINE__);
 			dump_page(page);
+                        printk(KERN_ALERT "Page migration failed");
 		}
 		return rc;
 	}
@@ -673,6 +678,7 @@ static int fallback_migrate_page(struct address_space *mapping,
 		if (is_failed_page(page, pass, tries)) {
 			printk("%s[%d] 2 ", __func__, __LINE__);
 			dump_page(page);
+                        printk(KERN_ALERT "Page migration failed");
 		}
 		return -EAGAIN;
 	}
@@ -682,6 +688,7 @@ static int fallback_migrate_page(struct address_space *mapping,
 		if (is_failed_page(page, pass, tries)) {
 			printk("%s[%d] 3 ", __func__, __LINE__);
 			dump_page(page);
+                        printk(KERN_ALERT "Page migration failed");
 		}
 	}
 	return rc;
@@ -726,6 +733,7 @@ static int move_to_new_page(struct page *newpage, struct page *page,
 			if (is_failed_page(page, pass, tries)) {
 				printk("%s[%d]: 1 ", __func__, __LINE__);
 				dump_page(page);
+                                printk(KERN_ALERT "Page migration failed");
 			}
 		}
 	} else if (mapping->a_ops->migratepage) {
@@ -743,6 +751,7 @@ static int move_to_new_page(struct page *newpage, struct page *page,
 	      printk(KERN_ERR "%s[%d]: 3 ",
 		     __func__, __LINE__);
 	      dump_page(page);
+              printk(KERN_ALERT "Page migration failed");
 	    }
 	  }
 	} else	{
@@ -753,6 +762,7 @@ static int move_to_new_page(struct page *newpage, struct page *page,
 	      printk(KERN_ERR "%s[%d]: 4 ",
 		     __func__, __LINE__);
 	      dump_page(page);
+              printk(KERN_ALERT "Page migration failed");
 	    }
 	  }
 	}
@@ -804,6 +814,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
 			if (is_failed_page(page, pass, tries)) {
 				printk("%s[%d] 1 ", __func__, __LINE__);
 				dump_page(page);
+                                printk(KERN_ALERT "Page migration failed");
 			}
 			goto move_newpage;
 		}
@@ -825,6 +836,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
 			if (is_failed_page(page, pass, tries)) {
 				printk("%s[%d] 2 ", __func__, __LINE__);
 				dump_page(page);
+                                printk(KERN_ALERT "Page migration failed");
 			}
 			goto move_newpage;
 		}
@@ -910,6 +922,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
 			if (is_failed_page(page, pass, tries)) {
 				printk("%s[%d] 3 ", __func__, __LINE__);
 				dump_page(page);
+                                printk(KERN_ALERT "Page migration failed");
 			}
 			goto uncharge;
 		}
@@ -934,6 +947,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
 			if (is_failed_page(page, pass, tries)) {
 				printk("%s[%d] 4 ", __func__, __LINE__);
 				dump_page(page);
+                                printk(KERN_ALERT "Page migration failed");
 			}
 			goto uncharge;
 		}
@@ -951,6 +965,7 @@ skip_unmap:
 			if (is_failed_page(page, pass, tries)) {
 				printk("%s[%d] 5 ", __func__, __LINE__);
 				dump_page(page);
+                                printk(KERN_ALERT "Page migration failed");
 			}
 		}
 	}
@@ -1120,6 +1135,7 @@ int migrate_pages(struct list_head *from,
 					printk(KERN_INFO "%s:%d ", __func__,
 								 __LINE__);
 					dump_page(page);
+                                        printk(KERN_ALERT "Page migration failed");
 				}
 				retry++;
 				break;

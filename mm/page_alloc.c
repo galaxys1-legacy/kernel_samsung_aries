@@ -357,6 +357,7 @@ static void bad_page(struct page *page)
 	printk(KERN_ALERT "BUG: Bad page state in process %s  pfn:%05lx\n",
 		current->comm, page_to_pfn(page));
 	dump_page(page);
+        printk(KERN_ALERT "Page alloc failed");
 
 	dump_stack();
 out:
