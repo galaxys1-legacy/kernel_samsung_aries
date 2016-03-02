@@ -763,13 +763,8 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
 		page = pfn_to_page(pfn);
 
 		if (PageHighMem(page)) {
-			if (len + offset > PAGE_SIZE) {
-				if (offset >= PAGE_SIZE) {
-					page += offset / PAGE_SIZE;
-					offset %= PAGE_SIZE;
-				}
+			if (len + offset > PAGE_SIZE)
 				len = PAGE_SIZE - offset;
-			}
 			vaddr = kmap_high_get(page);
 			if (vaddr) {
 				vaddr += offset;
