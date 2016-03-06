@@ -107,11 +107,11 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
 			pfn += 1;
 			printk(KERN_INFO "%s:%d ", __func__, __LINE__);
 			dump_page(page);
-                        printk(KERN_ALERT "Page isolation failed, page count == 0");
+                        printk(KERN_ALERT "Page isolation failed, page count");
 		} else {
 			printk(KERN_INFO "%s:%d ", __func__, __LINE__);
 			dump_page(page);
-                        printk(KERN_ALERT "Page isolation failed, page count != 0");
+                        printk(KERN_ALERT "Page isolation failed, page count(%d) != 0 and page private(%d) != MIGRATE ISOLATE(%d)", page_count(page), page_private(page), MIGRATE_ISOLATE);
 			break;
 		}
 	}
