@@ -135,6 +135,10 @@ enum pageflags {
 
 #ifndef __GENERATING_BOUNDS_H
 
+#ifdef CONFIG_CMA
+struct page;
+extern struct page *migrate_pages_current;
+
 /*
  * Macros to create function definitions for page flags
  */
@@ -169,6 +173,8 @@ static inline int TestClearPage##uname(struct page *page)		\
 #define __TESTCLEARFLAG(uname, lname)					\
 static inline int __TestClearPage##uname(struct page *page)		\
 		{ return __test_and_clear_bit(PG_##lname, &page->flags); }
+		
+#endif
 
 #define PAGEFLAG(uname, lname) TESTPAGEFLAG(uname, lname)		\
 	SETPAGEFLAG(uname, lname) CLEARPAGEFLAG(uname, lname)
