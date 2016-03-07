@@ -127,9 +127,9 @@ do {								\
 #ifndef clear_user_highpage
 static inline void clear_user_highpage(struct page *page, unsigned long vaddr)
 {
-	void *addr = kmap_atomic(page);
+	void *addr = kmap_atomic(page, KM_USER0);
 	clear_user_page(addr, vaddr, page);
-	kunmap_atomic(addr);
+	kunmap_atomic(addr, KM_USER0);
 }
 #endif
 
@@ -175,21 +175,43 @@ static inline struct page *
 alloc_zeroed_user_highpage_movable(struct vm_area_struct *vma,
 					unsigned long vaddr)
 {
+#ifndef CONFIG_CMA
 	return __alloc_zeroed_user_highpage(__GFP_MOVABLE, vma, vaddr);
+#else
+	return __alloc_zeroed_user_highpage(__GFP_MOVABLE|__GFP_CMA, vma,
+						vaddr);
+#endif
 }
+
+#ifdef CONFIG_CMA
+static inline struct page *
+alloc_zeroed_user_highpage(struct vm_area_struct *vma,
+					unsigned long vaddr)
+{
+	return __alloc_zeroed_user_highpage(0, vma, vaddr);
+}
+
+static inline struct page *
+alloc_zeroed_user_highpage_movable_cma(struct vm_area_struct *vma,
+						unsigned long vaddr)
+{
+	return __alloc_zeroed_user_highpage(__GFP_MOVABLE|__GFP_CMA, vma,
+						vaddr);
+}
+#endif
 
 static inline void clear_highpage(struct page *page)
 {
-	void *kaddr = kmap_atomic(page);
+	void *kaddr = kmap_atomic(page, KM_USER0);
 	clear_page(kaddr);
-	kunmap_atomic(kaddr);
+	kunmap_atomic(kaddr, KM_USER0);
 }
 
 static inline void zero_user_segments(struct page *page,
 	unsigned start1, unsigned end1,
 	unsigned start2, unsigned end2)
 {
-	void *kaddr = kmap_atomic(page);
+	void *kaddr = kmap_atomic(page, KM_USER0);
 
 	BUG_ON(end1 > PAGE_SIZE || end2 > PAGE_SIZE);
 
@@ -199,7 +221,7 @@ static inline void zero_user_segments(struct page *page,
 	if (end2 > start2)
 		memset(kaddr + start2, 0, end2 - start2);
 
-	kunmap_atomic(kaddr);
+	kunmap_atomic(kaddr, KM_USER0);
 	flush_dcache_page(page);
 }
 
@@ -228,11 +250,11 @@ static inline void copy_user_highpage(struct page *to, struct page *from,
 {
 	char *vfrom, *vto;
 
-	vfrom = kmap_atomic(from);
-	vto = kmap_atomic(to);
+	vfrom = kmap_atomic(from, KM_USER0);
+	vto = kmap_atomic(to, KM_USER1);
 	copy_user_page(vto, vfrom, vaddr, to);
-	kunmap_atomic(vto);
-	kunmap_atomic(vfrom);
+	kunmap_atomic(vto, KM_USER1);
+	kunmap_atomic(vfrom, KM_USER0);
 }
 
 #endif
@@ -241,11 +263,11 @@ static inline void copy_highpage(struct page *to, struct page *from)
 {
 	char *vfrom, *vto;
 
-	vfrom = kmap_atomic(from);
-	vto = kmap_atomic(to);
+	vfrom = kmap_atomic(from, KM_USER0);
+	vto = kmap_atomic(to, KM_USER1);
 	copy_page(vto, vfrom);
-	kunmap_atomic(vto);
-	kunmap_atomic(vfrom);
+	kunmap_atomic(vto, KM_USER1);
+	kunmap_atomic(vfrom, KM_USER0);
 }
 
 #endif /* _LINUX_HIGHMEM_H */

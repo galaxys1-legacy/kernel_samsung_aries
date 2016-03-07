@@ -947,8 +947,13 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
 		return PTR_ERR(vma);
 
 	if (!list_empty(&pagelist)) {
+#ifndef CONFIG_CMA
 		err = migrate_pages(&pagelist, new_node_page, dest,
-							false, MIGRATE_SYNC);
+								false, MIGRATE_SYNC);
+#else
+		err = migrate_pages(&pagelist, new_node_page, dest,
+								false, MIGRATE_SYNC, 0);
+#endif
 		if (err)
 			putback_lru_pages(&pagelist);
 	}
@@ -1167,9 +1172,15 @@ static long do_mbind(unsigned long start, unsigned long len,
 		err = mbind_range(mm, start, end, new);
 
 		if (!list_empty(&pagelist)) {
+#ifndef CONFIG_CMA
 			nr_failed = migrate_pages(&pagelist, new_vma_page,
 						(unsigned long)vma,
 						false, true);
+#else
+			nr_failed = migrate_pages(&pagelist, new_vma_page,
+						(unsigned long)vma,
+						false, true, 0);
+#endif
 			if (nr_failed)
 				putback_lru_pages(&pagelist);
 		}
@@ -1328,9 +1339,12 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pid, unsigned long, maxnode,
 		err = -ESRCH;
 		goto out;
 	}
-	get_task_struct(task);
+	mm = get_task_mm(task);
+	rcu_read_unlock();
 
 	err = -EINVAL;
+	if (!mm)
+		goto out;
 
 	/*
 	 * Check if this process has the right to modify the specified
@@ -1338,13 +1352,14 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pid, unsigned long, maxnode,
 	 * capabilities, superuser privileges or the same
 	 * userid as the target process.
 	 */
+	rcu_read_lock();
 	tcred = __task_cred(task);
 	if (cred->euid != tcred->suid && cred->euid != tcred->uid &&
 	    cred->uid  != tcred->suid && cred->uid  != tcred->uid &&
 	    !capable(CAP_SYS_NICE)) {
 		rcu_read_unlock();
 		err = -EPERM;
-		goto out_put;
+		goto out;
 	}
 	rcu_read_unlock();
 
@@ -1352,36 +1367,26 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pid, unsigned long, maxnode,
 	/* Is the user allowed to access the target nodes? */
 	if (!nodes_subset(*new, task_nodes) && !capable(CAP_SYS_NICE)) {
 		err = -EPERM;
-		goto out_put;
+		goto out;
 	}
 
 	if (!nodes_subset(*new, node_states[N_HIGH_MEMORY])) {
 		err = -EINVAL;
-		goto out_put;
+		goto out;
 	}
 
 	err = security_task_movememory(task);
 	if (err)
-		goto out_put;
+		goto out;
 
-	mm = get_task_mm(task);
-	put_task_struct(task);
-	if (mm)
-		err = do_migrate_pages(mm, old, new,
-			capable(CAP_SYS_NICE) ? MPOL_MF_MOVE_ALL : MPOL_MF_MOVE);
-	else
-		err = -EINVAL;
-
-	mmput(mm);
+	err = do_migrate_pages(mm, old, new,
+		capable(CAP_SYS_NICE) ? MPOL_MF_MOVE_ALL : MPOL_MF_MOVE);
 out:
+	if (mm)
+		mmput(mm);
 	NODEMASK_SCRATCH_FREE(scratch);
 
 	return err;
-
-out_put:
-	put_task_struct(task);
-	goto out;
-
 }
 
 
