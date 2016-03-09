@@ -2546,4 +2546,4 @@ out_free:
 out:
 	return err;
 }
-module_init(ksm_init)à
+module_init(ksm_init)
