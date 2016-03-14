@@ -1,5 +1,5 @@
 /*
- * drivers/staging/android/ion/ion_chunk_heap.c
+ * drivers/gpu/ion/ion_chunk_heap.c
  *
  * Copyright (C) 2012 Google, Inc.
  *
@@ -13,16 +13,19 @@
  * GNU General Public License for more details.
  *
  */
+//#include <linux/spinlock.h>
 #include <linux/dma-mapping.h>
 #include <linux/err.h>
 #include <linux/genalloc.h>
 #include <linux/io.h>
+#include <linux/ion.h>
 #include <linux/mm.h>
 #include <linux/scatterlist.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
-#include "ion.h"
 #include "ion_priv.h"
+
+#include <asm/mach/map.h>
 
 struct ion_chunk_heap {
 	struct ion_heap heap;
@@ -46,8 +49,8 @@ static int ion_chunk_heap_allocate(struct ion_heap *heap,
 	unsigned long num_chunks;
 	unsigned long allocated_size;
 
-	if (align > chunk_heap->chunk_size)
-		return -EINVAL;
+	if (ion_buffer_fault_user_mappings(buffer))
+		return -ENOMEM;
 
 	allocated_size = ALIGN(size, chunk_heap->chunk_size);
 	num_chunks = allocated_size / chunk_heap->chunk_size;
@@ -70,8 +73,7 @@ static int ion_chunk_heap_allocate(struct ion_heap *heap,
 						     chunk_heap->chunk_size);
 		if (!paddr)
 			goto err;
-		sg_set_page(sg, pfn_to_page(PFN_DOWN(paddr)),
-				chunk_heap->chunk_size, 0);
+		sg_set_page(sg, phys_to_page(paddr), chunk_heap->chunk_size, 0);
 		sg = sg_next(sg);
 	}
 
@@ -82,7 +84,7 @@ err:
 	sg = table->sgl;
 	for (i -= 1; i >= 0; i--) {
 		gen_pool_free(chunk_heap->pool, page_to_phys(sg_page(sg)),
-			      sg->length);
+			      sg_dma_len(sg));
 		sg = sg_next(sg);
 	}
 	sg_free_table(table);
@@ -104,27 +106,26 @@ static void ion_chunk_heap_free(struct ion_buffer *buffer)
 
 	ion_heap_buffer_zero(buffer);
 
-	if (ion_buffer_cached(buffer))
-		dma_sync_sg_for_device(NULL, table->sgl, table->nents,
-								DMA_BIDIRECTIONAL);
-
 	for_each_sg(table->sgl, sg, table->nents, i) {
+		if (ion_buffer_cached(buffer))
+			__dma_page_cpu_to_dev(sg_page(sg), 0, sg_dma_len(sg),
+					      DMA_BIDIRECTIONAL);
 		gen_pool_free(chunk_heap->pool, page_to_phys(sg_page(sg)),
-			      sg->length);
+			      sg_dma_len(sg));
 	}
 	chunk_heap->allocated -= allocated_size;
 	sg_free_table(table);
 	kfree(table);
 }
 
-static struct sg_table *ion_chunk_heap_map_dma(struct ion_heap *heap,
-					       struct ion_buffer *buffer)
+struct sg_table *ion_chunk_heap_map_dma(struct ion_heap *heap,
+					 struct ion_buffer *buffer)
 {
 	return buffer->priv_virt;
 }
 
-static void ion_chunk_heap_unmap_dma(struct ion_heap *heap,
-				     struct ion_buffer *buffer)
+void ion_chunk_heap_unmap_dma(struct ion_heap *heap,
+			       struct ion_buffer *buffer)
 {
 	return;
 }
@@ -145,6 +146,7 @@ struct ion_heap *ion_chunk_heap_create(struct ion_platform_heap *heap_data)
 	struct vm_struct *vm_struct;
 	pgprot_t pgprot = pgprot_writecombine(PAGE_KERNEL);
 	int i, ret;
+
 
 	chunk_heap = kzalloc(sizeof(struct ion_chunk_heap), GFP_KERNEL);
 	if (!chunk_heap)
@@ -167,7 +169,7 @@ struct ion_heap *ion_chunk_heap_create(struct ion_platform_heap *heap_data)
 		goto error;
 	}
 	for (i = 0; i < chunk_heap->size; i += PAGE_SIZE) {
-		struct page *page = pfn_to_page(PFN_DOWN(chunk_heap->base + i));
+		struct page *page = phys_to_page(chunk_heap->base + i);
 		struct page **pages = &page;
 
 		ret = map_vm_area(vm_struct, pgprot, &pages);
@@ -178,14 +180,13 @@ struct ion_heap *ion_chunk_heap_create(struct ion_platform_heap *heap_data)
 	}
 	free_vm_area(vm_struct);
 
-	ion_pages_sync_for_device(NULL, pfn_to_page(PFN_DOWN(heap_data->base)),
-			heap_data->size, DMA_BIDIRECTIONAL);
-
+	__dma_page_cpu_to_dev(phys_to_page(heap_data->base), 0, heap_data->size,
+			      DMA_BIDIRECTIONAL);
 	gen_pool_add(chunk_heap->pool, chunk_heap->base, heap_data->size, -1);
 	chunk_heap->heap.ops = &chunk_heap_ops;
 	chunk_heap->heap.type = ION_HEAP_TYPE_CHUNK;
 	chunk_heap->heap.flags = ION_HEAP_FLAG_DEFER_FREE;
-	pr_info("%s: base %lu size %zu align %ld\n", __func__, chunk_heap->base,
+	pr_info("%s: base %lu size %u align %ld\n", __func__, chunk_heap->base,
 		heap_data->size, heap_data->align);
 
 	return &chunk_heap->heap;

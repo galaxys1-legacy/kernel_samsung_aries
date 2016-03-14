@@ -15,7 +15,7 @@
  */
 
 #include <linux/debugfs.h>
-#include <linux/export.h>
+#include <linux/module.h>
 #include <linux/file.h>
 #include <linux/fs.h>
 #include <linux/kernel.h>
@@ -586,34 +586,6 @@ static bool sync_fence_check(struct sync_fence *fence)
 	return fence->status != 0;
 }
 
-int sync_fence_cancel_async(struct sync_fence *fence,
-			     struct sync_fence_waiter *waiter)
-{
-	struct list_head *pos;
-	struct list_head *n;
-	unsigned long flags;
-	int ret = -ENOENT;
-
-	spin_lock_irqsave(&fence->waiter_list_lock, flags);
-	/*
-	 * Make sure waiter is still in waiter_list because it is possible for
-	 * the waiter to be removed from the list while the callback is still
-	 * pending.
-	 */
-	list_for_each_safe(pos, n, &fence->waiter_list_head) {
-		struct sync_fence_waiter *list_waiter =
-			container_of(pos, struct sync_fence_waiter,
-				     waiter_list);
-		if (list_waiter == waiter) {
-			list_del(pos);
-			ret = 0;
-			break;
-		}
-	}
-	spin_unlock_irqrestore(&fence->waiter_list_lock, flags);
-	return ret;
-}
-
 int sync_fence_wait(struct sync_fence *fence, long timeout)
 {
 	int err = 0;
@@ -643,12 +615,10 @@ int sync_fence_wait(struct sync_fence *fence, long timeout)
 		return fence->status;
 	}
 
-	if (fence->status == 0) {
-		if (timeout > 0) {
-			pr_info("fence timeout on [%p] after %dms\n", fence,
-				jiffies_to_msecs(timeout));
-			sync_dump();
-		}
+	if (fence->status == 0 && timeout > 0) {
+		pr_info("fence timeout on [%p] after %dms\n", fence,
+			jiffies_to_msecs(timeout));
+		sync_dump();
 		return -ETIME;
 	}
 
@@ -770,7 +740,7 @@ err_put_fd:
 	return err;
 }
 
-static int sync_fill_pt_info(struct sync_pt *pt, void *data, int size)
+int sync_fill_pt_info(struct sync_pt *pt, void *data, int size)
 {
 	struct sync_pt_info *info = data;
 	int ret;
@@ -797,6 +767,7 @@ static int sync_fill_pt_info(struct sync_pt *pt, void *data, int size)
 
 	return info->len;
 }
+
 
 static long sync_fence_ioctl_fence_info(struct sync_fence *fence,
 					unsigned long arg)
