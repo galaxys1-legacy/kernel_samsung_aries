@@ -1,5 +1,5 @@
 /*
- * drivers/staging/android/ion/ion_heap.c
+ * drivers/gpu/ion/ion_heap.c
  *
  * Copyright (C) 2011 Google, Inc.
  *
@@ -16,13 +16,13 @@
 
 #include <linux/err.h>
 #include <linux/freezer.h>
+#include <linux/ion.h>
 #include <linux/kthread.h>
 #include <linux/mm.h>
 #include <linux/rtmutex.h>
 #include <linux/sched.h>
 #include <linux/scatterlist.h>
 #include <linux/vmalloc.h>
-#include "ion.h"
 #include "ion_priv.h"
 
 void *ion_heap_map_kernel(struct ion_heap *heap,
@@ -38,7 +38,7 @@ void *ion_heap_map_kernel(struct ion_heap *heap,
 	struct page **tmp = pages;
 
 	if (!pages)
-		return NULL;
+		return 0;
 
 	if (buffer->flags & ION_FLAG_CACHED)
 		pgprot = PAGE_KERNEL;
@@ -46,11 +46,12 @@ void *ion_heap_map_kernel(struct ion_heap *heap,
 		pgprot = pgprot_writecombine(PAGE_KERNEL);
 
 	for_each_sg(table->sgl, sg, table->nents, i) {
-		int npages_this_entry = PAGE_ALIGN(sg->length) / PAGE_SIZE;
+		int npages_this_entry = PAGE_ALIGN(sg_dma_len(sg)) / PAGE_SIZE;
 		struct page *page = sg_page(sg);
 		BUG_ON(i >= npages);
-		for (j = 0; j < npages_this_entry; j++)
+		for (j = 0; j < npages_this_entry; j++) {
 			*(tmp++) = page++;
+		}
 	}
 	vaddr = vmap(pages, npages, VM_MAP, pgprot);
 	vfree(pages);
@@ -75,41 +76,27 @@ int ion_heap_map_user(struct ion_heap *heap, struct ion_buffer *buffer,
 	unsigned long offset = vma->vm_pgoff * PAGE_SIZE;
 	struct scatterlist *sg;
 	int i;
-	int ret;
 
 	for_each_sg(table->sgl, sg, table->nents, i) {
 		struct page *page = sg_page(sg);
 		unsigned long remainder = vma->vm_end - addr;
-		unsigned long len = sg->length;
+		unsigned long len = sg_dma_len(sg);
 
-		if (offset >= sg->length) {
-			offset -= sg->length;
+		if (offset >= sg_dma_len(sg)) {
+			offset -= sg_dma_len(sg);
 			continue;
 		} else if (offset) {
 			page += offset / PAGE_SIZE;
-			len = sg->length - offset;
+			len = sg_dma_len(sg) - offset;
 			offset = 0;
 		}
 		len = min(len, remainder);
-		ret = remap_pfn_range(vma, addr, page_to_pfn(page), len,
+		remap_pfn_range(vma, addr, page_to_pfn(page), len,
 				vma->vm_page_prot);
-		if (ret)
-			return ret;
 		addr += len;
 		if (addr >= vma->vm_end)
 			return 0;
 	}
-	return 0;
-}
-
-static int ion_heap_clear_pages(struct page **pages, int num, pgprot_t pgprot)
-{
-	void *addr = vm_map_ram(pages, num, -1, pgprot);
-	if (!addr)
-		return -ENOMEM;
-	memset(addr, 0, PAGE_SIZE * num);
-	vm_unmap_ram(addr, num);
-
 	return 0;
 }
 
@@ -118,41 +105,71 @@ int ion_heap_buffer_zero(struct ion_buffer *buffer)
 	struct sg_table *table = buffer->sg_table;
 	pgprot_t pgprot;
 	struct scatterlist *sg;
+	struct vm_struct *vm_struct;
 	int i, j, ret = 0;
-	struct page *pages[32];
-	int k = 0;
 
 	if (buffer->flags & ION_FLAG_CACHED)
 		pgprot = PAGE_KERNEL;
 	else
 		pgprot = pgprot_writecombine(PAGE_KERNEL);
 
+	vm_struct = get_vm_area(PAGE_SIZE, VM_ALLOC);
+	if (!vm_struct)
+		return -ENOMEM;
+
 	for_each_sg(table->sgl, sg, table->nents, i) {
 		struct page *page = sg_page(sg);
-		unsigned long len = sg->length;
+		unsigned long len = sg_dma_len(sg);
 
 		for (j = 0; j < len / PAGE_SIZE; j++) {
-			pages[k++] = page + j;
-			if (k == ARRAY_SIZE(pages)) {
-				ret = ion_heap_clear_pages(pages, k, pgprot);
-				if (ret)
-					goto end;
-				k = 0;
-			}
+			struct page *sub_page = page + j;
+			struct page **pages = &sub_page;
+			ret = map_vm_area(vm_struct, pgprot, &pages);
+			if (ret)
+				goto end;
+			memset(vm_struct->addr, 0, PAGE_SIZE);
+			unmap_kernel_range((unsigned long)vm_struct->addr,
+					   PAGE_SIZE);
 		}
-		if (k)
-			ret = ion_heap_clear_pages(pages, k, pgprot);
 	}
 end:
+	free_vm_area(vm_struct);
 	return ret;
 }
 
-void ion_heap_freelist_add(struct ion_heap *heap, struct ion_buffer *buffer)
+struct page *ion_heap_alloc_pages(struct ion_buffer *buffer, gfp_t gfp_flags,
+				  unsigned int order)
 {
-	spin_lock(&heap->free_lock);
+	struct page *page = alloc_pages(gfp_flags, order);
+
+	if (!page)
+		return page;
+
+	if (ion_buffer_fault_user_mappings(buffer))
+		split_page(page, order);
+
+	return page;
+}
+
+void ion_heap_free_pages(struct ion_buffer *buffer, struct page *page,
+			 unsigned int order)
+{
+	int i;
+
+	if (!ion_buffer_fault_user_mappings(buffer)) {
+		__free_pages(page, order);
+		return;
+	}
+	for (i = 0; i < (1 << order); i++)
+		__free_page(page + i);
+}
+
+void ion_heap_freelist_add(struct ion_heap *heap, struct ion_buffer * buffer)
+{
+	rt_mutex_lock(&heap->lock);
 	list_add(&buffer->list, &heap->free_list);
 	heap->free_list_size += buffer->size;
-	spin_unlock(&heap->free_lock);
+	rt_mutex_unlock(&heap->lock);
 	wake_up(&heap->waitqueue);
 }
 
@@ -160,56 +177,39 @@ size_t ion_heap_freelist_size(struct ion_heap *heap)
 {
 	size_t size;
 
-	spin_lock(&heap->free_lock);
+	rt_mutex_lock(&heap->lock);
 	size = heap->free_list_size;
-	spin_unlock(&heap->free_lock);
+	rt_mutex_unlock(&heap->lock);
 
 	return size;
 }
 
-static size_t _ion_heap_freelist_drain(struct ion_heap *heap, size_t size,
-				bool skip_pools)
+size_t ion_heap_freelist_drain(struct ion_heap *heap, size_t size)
 {
-	struct ion_buffer *buffer;
+	struct ion_buffer *buffer, *tmp;
 	size_t total_drained = 0;
 
 	if (ion_heap_freelist_size(heap) == 0)
 		return 0;
 
-	spin_lock(&heap->free_lock);
+	rt_mutex_lock(&heap->lock);
 	if (size == 0)
 		size = heap->free_list_size;
 
-	while (!list_empty(&heap->free_list)) {
+	list_for_each_entry_safe(buffer, tmp, &heap->free_list, list) {
 		if (total_drained >= size)
 			break;
-		buffer = list_first_entry(&heap->free_list, struct ion_buffer,
-					  list);
 		list_del(&buffer->list);
-		heap->free_list_size -= buffer->size;
-		if (skip_pools)
-			buffer->private_flags |= ION_PRIV_FLAG_SHRINKER_FREE;
-		total_drained += buffer->size;
-		spin_unlock(&heap->free_lock);
 		ion_buffer_destroy(buffer);
-		spin_lock(&heap->free_lock);
+		heap->free_list_size -= buffer->size;
+		total_drained += buffer->size;
 	}
-	spin_unlock(&heap->free_lock);
+	rt_mutex_unlock(&heap->lock);
 
 	return total_drained;
 }
 
-size_t ion_heap_freelist_drain(struct ion_heap *heap, size_t size)
-{
-	return _ion_heap_freelist_drain(heap, size, false);
-}
-
-size_t ion_heap_freelist_shrink(struct ion_heap *heap, size_t size)
-{
-	return _ion_heap_freelist_drain(heap, size, true);
-}
-
-static int ion_heap_deferred_free(void *data)
+int ion_heap_deferred_free(void *data)
 {
 	struct ion_heap *heap = data;
 
@@ -219,16 +219,16 @@ static int ion_heap_deferred_free(void *data)
 		wait_event_freezable(heap->waitqueue,
 				     ion_heap_freelist_size(heap) > 0);
 
-		spin_lock(&heap->free_lock);
+		rt_mutex_lock(&heap->lock);
 		if (list_empty(&heap->free_list)) {
-			spin_unlock(&heap->free_lock);
+			rt_mutex_unlock(&heap->lock);
 			continue;
 		}
 		buffer = list_first_entry(&heap->free_list, struct ion_buffer,
 					  list);
 		list_del(&buffer->list);
 		heap->free_list_size -= buffer->size;
-		spin_unlock(&heap->free_lock);
+		rt_mutex_unlock(&heap->lock);
 		ion_buffer_destroy(buffer);
 	}
 
@@ -241,55 +241,17 @@ int ion_heap_init_deferred_free(struct ion_heap *heap)
 
 	INIT_LIST_HEAD(&heap->free_list);
 	heap->free_list_size = 0;
-	spin_lock_init(&heap->free_lock);
+	rt_mutex_init(&heap->lock);
 	init_waitqueue_head(&heap->waitqueue);
 	heap->task = kthread_run(ion_heap_deferred_free, heap,
 				 "%s", heap->name);
+	sched_setscheduler(heap->task, SCHED_IDLE, &param);
 	if (IS_ERR(heap->task)) {
 		pr_err("%s: creating thread for deferred free failed\n",
 		       __func__);
-		return PTR_ERR_OR_ZERO(heap->task);
+		return PTR_RET(heap->task);
 	}
-	sched_setscheduler(heap->task, SCHED_IDLE, &param);
 	return 0;
-}
-
-static int ion_heap_shrink(struct shrinker *shrinker, struct shrink_control *sc)
-{
-	struct ion_heap *heap = container_of(shrinker, struct ion_heap,
-					     shrinker);
-	int total = 0;
-	int freed = 0;
-	int to_scan = sc->nr_to_scan;
-
-	if (to_scan == 0)
-		goto out;
-
-	/*
-	 * shrink the free list first, no point in zeroing the memory if we're
-	 * just going to reclaim it. Also, skip any possible page pooling.
-	 */
-	if (heap->flags & ION_HEAP_FLAG_DEFER_FREE)
-		freed = ion_heap_freelist_shrink(heap, to_scan * PAGE_SIZE) /
-				PAGE_SIZE;
-
-	to_scan -= freed;
-	if (to_scan < 0)
-		to_scan = 0;
-
-out:
-	total = ion_heap_freelist_size(heap) / PAGE_SIZE;
-	if (heap->ops->shrink)
-		total += heap->ops->shrink(heap, sc->gfp_mask, to_scan);
-	return total;
-}
-
-void ion_heap_init_shrinker(struct ion_heap *heap)
-{
-	heap->shrinker.shrink = ion_heap_shrink;
-	heap->shrinker.seeks = DEFAULT_SEEKS;
-	heap->shrinker.batch = 0;
-	register_shrinker(&heap->shrinker);
 }
 
 struct ion_heap *ion_heap_create(struct ion_platform_heap *heap_data)
@@ -319,7 +281,7 @@ struct ion_heap *ion_heap_create(struct ion_platform_heap *heap_data)
 	}
 
 	if (IS_ERR_OR_NULL(heap)) {
-		pr_err("%s: error creating heap %s type %d base %lu size %zu\n",
+		pr_err("%s: error creating heap %s type %d base %lu size %u\n",
 		       __func__, heap_data->name, heap_data->type,
 		       heap_data->base, heap_data->size);
 		return ERR_PTR(-EINVAL);
