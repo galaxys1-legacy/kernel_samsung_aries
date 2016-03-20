@@ -135,7 +135,7 @@ void s5p_reserve_bootmem(struct s5p_media_device *mdevs,
 		if (!strcmp(mdev->name, "mfc") && mdev->bank == 0)
 			mfc_paddr = mdev->paddr;
 
-		printk(KERN_INFO "s5p: %lu bytes system memory reserved "
+		printk(KERN_INFO "s5p-bootmem: %lu bytes system memory reserved "
 			"for %s at 0x%08x, %d-bank base(0x%08x)\n",
 			(unsigned long) mdev->memsize, mdev->name, mdev->paddr,
 			mdev->bank, media_base[mdev->bank]);
