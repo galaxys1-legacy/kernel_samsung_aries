@@ -337,18 +337,22 @@ static struct s3cfb_lcd s6e63m0 = {
 };
 
 #define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0 (12288 * SZ_1K)
+#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0_XL (12288 * SZ_1K)
 #define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0_BM (5000 * SZ_1K)
 
 // Disabled to save memory (we can't find where it's used)
 //#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC1 (9900 * SZ_1K)
 
 #define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC2 (12288 * SZ_1K)
+#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC2_XL (12288 * SZ_1K)
 #define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC2_BM (5000 * SZ_1K)
 
 #define S5PV210_VIDEO_SAMSUNG_MEMSIZE_NOCAM (0 * SZ_1K)
 
 #define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC0_XL (11264 * SZ_1K)
 #define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC1_XL (11264 * SZ_1K)
+#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC0_BM (11264 * SZ_1K)
+#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC1_BM (11264 * SZ_1K)
 
 #define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC0 (14336 * SZ_1K)
 #define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC1 (21504 * SZ_1K)
@@ -5349,42 +5353,52 @@ static struct platform_device *aries_devices[] __initdata = {
 };
 
 static void check_bigmem(void) {
+	enum mdev_ids  {
+	mfc0 = 0,
+	mfc1 = 1,
+	fimc0 = 2,
+	// fimc1 was removed
+	fimc2 = 3,
+	jpeg = 4,
+	};
+
 	int bootmode = __raw_readl(S5P_INFORM6);
 	if ((bootmode == 11) || (bootmode == 13)) {
 		nocam = true;
 		bigmem = false;
 		xlmem = false;
-		aries_media_devs[2].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_NOCAM;
-		aries_media_devs[4].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_NOCAM;
-		aries_media_devs[0].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_NOCAM;
-		aries_media_devs[1].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_NOCAM;
+		aries_media_devs[mfc0].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_NOCAM;
+		aries_media_devs[mfc1].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_NOCAM;
+		aries_media_devs[fimc0].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_NOCAM;
+		aries_media_devs[fimc2].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_NOCAM;
+		aries_media_devs[jpeg].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_NOCAM;
 	}
 	else if ((bootmode == 7) || (bootmode == 9)) {
 		bigmem = true;
 		nocam = false;
 		xlmem = false;
-		aries_media_devs[2].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0_BM;
-		aries_media_devs[4].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0_BM;
-		aries_media_devs[0].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC0_XL; 
-		aries_media_devs[1].memsize =  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC1_XL;
+		aries_media_devs[mfc0].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC0_BM;
+		aries_media_devs[mfc1].memsize =  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC1_BM;
+		aries_media_devs[fimc0].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0_BM;
+		aries_media_devs[fimc2].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC2_BM;
 	}
 	else if ((bootmode == 3) || (bootmode == 5)) {
 		xlmem = true;
 		bigmem = false;
 		nocam = false;
-		aries_media_devs[2].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0;
-		aries_media_devs[4].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0;
-		aries_media_devs[0].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC0_XL; 
-		aries_media_devs[1].memsize =  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC1_XL;
+		aries_media_devs[mfc0].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC0_XL;
+		aries_media_devs[mfc1].memsize =  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC1_XL;
+		aries_media_devs[fimc0].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0_XL;
+		aries_media_devs[fimc2].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC2_XL;
 	}
 	else {
 		bigmem = false;
 		xlmem = false;
 		nocam = false;
-		aries_media_devs[2].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0;
-		aries_media_devs[4].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0;
-		aries_media_devs[0].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC0; 
-		aries_media_devs[1].memsize =  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC1;
+		aries_media_devs[mfc0].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC0;
+		aries_media_devs[mfc1].memsize =  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC1;
+		aries_media_devs[fimc0].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0;
+		aries_media_devs[fimc2].memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC2;
 	}
 }
 
