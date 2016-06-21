@@ -593,7 +593,7 @@ static void reset_page(struct page *page)
 	set_page_private(page, 0);
 	page->mapping = NULL;
 	page->freelist = NULL;
-	page_mapcount_reset(page);
+	reset_page_mapcount(page);
 }
 
 static void free_zspage(struct page *first_page)
@@ -749,7 +749,7 @@ static inline int __zs_cpu_up(struct mapping_area *area)
 	 */
 	if (area->vm)
 		return 0;
-	area->vm = alloc_vm_area(PAGE_SIZE * 2, NULL);
+	area->vm = alloc_vm_area(PAGE_SIZE * 2);
 	if (!area->vm)
 		return -ENOMEM;
 	return 0;
@@ -765,7 +765,7 @@ static inline void __zs_cpu_down(struct mapping_area *area)
 static inline void *__zs_map_object(struct mapping_area *area,
 				struct page *pages[2], int off, int size)
 {
-	BUG_ON(map_vm_area(area->vm, PAGE_KERNEL, pages));
+	BUG_ON(map_vm_area(area->vm, PAGE_KERNEL, &pages));
 	area->vm_addr = area->vm->addr;
 	return area->vm_addr + off;
 }
@@ -884,35 +884,35 @@ static struct notifier_block zs_cpu_nb = {
 	.notifier_call = zs_cpu_notifier
 };
 
-static int zs_register_cpu_notifier(void)
-{
-	int cpu, uninitialized_var(ret);
-
-	cpu_notifier_register_begin();
-
-	__register_cpu_notifier(&zs_cpu_nb);
-	for_each_online_cpu(cpu) {
-		ret = zs_cpu_notifier(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
-		if (notifier_to_errno(ret))
-			break;
-	}
-
-	cpu_notifier_register_done();
-	return notifier_to_errno(ret);
-}
-
-static void zs_unregister_cpu_notifier(void)
-{
-	int cpu;
-
-	cpu_notifier_register_begin();
-
-	for_each_online_cpu(cpu)
-		zs_cpu_notifier(NULL, CPU_DEAD, (void *)(long)cpu);
-	__unregister_cpu_notifier(&zs_cpu_nb);
-
-	cpu_notifier_register_done();
-}
+// static int zs_register_cpu_notifier(void)
+// {
+// 	int cpu, uninitialized_var(ret);
+//
+// 	cpu_notifier_register_begin();
+//
+// 	__register_cpu_notifier(&zs_cpu_nb);
+// 	for_each_online_cpu(cpu) {
+// 		ret = zs_cpu_notifier(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
+// 		if (notifier_to_errno(ret))
+// 			break;
+// 	}
+//
+// 	cpu_notifier_register_done();
+// 	return notifier_to_errno(ret);
+// }
+//
+// static void zs_unregister_cpu_notifier(void)
+// {
+// 	int cpu;
+//
+// 	cpu_notifier_register_begin();
+//
+// 	for_each_online_cpu(cpu)
+// 		zs_cpu_notifier(NULL, CPU_DEAD, (void *)(long)cpu);
+// 	__unregister_cpu_notifier(&zs_cpu_nb);
+//
+// 	cpu_notifier_register_done();
+// }
 
 static void init_zs_size_classes(void)
 {
@@ -1248,10 +1248,10 @@ EXPORT_SYMBOL_GPL(zs_destroy_pool);
 
 static int __init zs_init(void)
 {
-	int ret = zs_register_cpu_notifier();
+	int ret = register_cpu_notifier(&zs_cpu_nb);
 
 	if (ret) {
-		zs_unregister_cpu_notifier();
+		unregister_cpu_notifier(&zs_cpu_nb);
 		return ret;
 	}
 
@@ -1268,7 +1268,7 @@ static void __exit zs_exit(void)
 #ifdef CONFIG_ZPOOL
 	zpool_unregister_driver(&zs_zpool_driver);
 #endif
-	zs_unregister_cpu_notifier();
+	unregister_cpu_notifier(&zs_cpu_nb);
 }
 
 module_init(zs_init);
