@@ -6076,6 +6076,8 @@ int alloc_contig_range(unsigned long start, unsigned long end,
 		outer_end = isolate_freepages_range(outer_start, end);
 		if (!outer_end) {
 			ret = -EBUSY;
+			printk(KERN_ERR "%s : isolate_freepages_range failed %lu\n",
+					__func__, outer_end);
 			continue;
 		}
 	}
