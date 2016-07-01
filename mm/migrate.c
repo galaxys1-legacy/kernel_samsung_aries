@@ -1111,8 +1111,6 @@ out:
 	return rc;
 }
 
-struct page *migrate_pages_current = NULL;
-
 /*
  * migrate_pages
  *
@@ -1157,12 +1155,6 @@ int migrate_pages(struct list_head *from,
 			case -ENOMEM:
 				goto out;
 			case -EAGAIN:
-				if (0) {
-				migrate_pages_current = page;
-				printk(KERN_INFO "%s:%d ", __func__,
-							 __LINE__);
-				dump_page(page);
-				}
 				retry++;
 				break;
 			case 0:
