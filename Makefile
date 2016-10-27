@@ -245,8 +245,8 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -Os -fno-tree-vectorize -fomit-frame-pointer
-HOSTCXXFLAGS = -Os -fno-tree-vectorize
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 -fno-tree-vectorize -fomit-frame-pointer
+HOSTCXXFLAGS = -O3 -fno-tree-vectorize
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
