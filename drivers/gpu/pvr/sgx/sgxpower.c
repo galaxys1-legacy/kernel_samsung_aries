@@ -33,8 +33,6 @@
 #include "sgxutils.h"
 #include "pdump_km.h"
 
-#include <linux/pvr_oc.h>
-
 
 #if defined(SUPPORT_HW_RECOVERY)
 static PVRSRV_ERROR SGXAddTimer(PVRSRV_DEVICE_NODE		*psDeviceNode,
@@ -85,8 +83,7 @@ static PVRSRV_ERROR SGXUpdateTimingInfo(PVRSRV_DEVICE_NODE	*psDeviceNode)
 
 		if (psDevInfo->hTimer != IMG_NULL)
 		{
-			// ui32OlduKernelFreq = psDevInfo->ui32CoreClockSpeed / psDevInfo->ui32uKernelTimerClock;
-			ui32OlduKernelFreq = pvr_clk_val / psDevInfo->ui32uKernelTimerClock;
+			ui32OlduKernelFreq = psDevInfo->ui32CoreClockSpeed / psDevInfo->ui32uKernelTimerClock;
 			if (ui32OlduKernelFreq != psSGXTimingInfo->ui32uKernelFreq)
 			{
 				
@@ -429,8 +426,7 @@ PVRSRV_ERROR SGXPreClockSpeedChange (IMG_HANDLE				hDevHandle,
 	}
 
 	PVR_DPF((PVR_DBG_MESSAGE,"SGXPreClockSpeedChange: SGX clock speed was %uHz",
-			// psDevInfo->ui32CoreClockSpeed));
-			pvr_clk_val));
+			psDevInfo->ui32CoreClockSpeed));
 
 	return PVRSRV_OK;
 }
@@ -442,8 +438,7 @@ PVRSRV_ERROR SGXPostClockSpeedChange (IMG_HANDLE				hDevHandle,
 {
 	PVRSRV_DEVICE_NODE	*psDeviceNode = hDevHandle;
 	PVRSRV_SGXDEV_INFO	*psDevInfo = psDeviceNode->pvDevice;
-	// IMG_UINT32			ui32OldClockSpeed = psDevInfo->ui32CoreClockSpeed;
-	IMG_UINT32      		ui32OldClockSpeed = pvr_clk_val;
+	IMG_UINT32			ui32OldClockSpeed = psDevInfo->ui32CoreClockSpeed;
 
 	PVR_UNREFERENCED_PARAMETER(ui32OldClockSpeed);
 
@@ -480,8 +475,7 @@ PVRSRV_ERROR SGXPostClockSpeedChange (IMG_HANDLE				hDevHandle,
 	}
 
 	PVR_DPF((PVR_DBG_MESSAGE,"SGXPostClockSpeedChange: SGX clock speed changed from %uHz to %uHz",
-			// ui32OldClockSpeed, psDevInfo->ui32CoreClockSpeed));
-			ui32OldClockSpeed, pvr_clk_val));
+			ui32OldClockSpeed, psDevInfo->ui32CoreClockSpeed));
 
 	return PVRSRV_OK;
 }
