@@ -24,53 +24,20 @@
  *
  ******************************************************************************/
 
-#ifndef __OSPERPROC_H__
-#define __OSPERPROC_H__
+#ifndef __REGPATHS_H__
+#define __REGPATHS_H__
 
-#if defined (__cplusplus)
-extern "C" {
-#endif
+#define POWERVR_REG_ROOT 	   			"Drivers\\Display\\PowerVR"
+#define POWERVR_CHIP_KEY				"\\SGX1\\"
 
-#if defined(__linux__)
-PVRSRV_ERROR OSPerProcessPrivateDataInit(IMG_HANDLE *phOsPrivateData);
-PVRSRV_ERROR OSPerProcessPrivateDataDeInit(IMG_HANDLE hOsPrivateData);
+#define POWERVR_EURASIA_KEY				"PowerVREurasia\\"
 
-PVRSRV_ERROR OSPerProcessSetHandleOptions(PVRSRV_HANDLE_BASE *psHandleBase);
-#else	
-#ifdef INLINE_IS_PRAGMA
-#pragma inline(OSPerProcessPrivateDataInit)
-#endif
-static INLINE PVRSRV_ERROR OSPerProcessPrivateDataInit(IMG_HANDLE *phOsPrivateData)
-{
-	PVR_UNREFERENCED_PARAMETER(phOsPrivateData);
+#define POWERVR_SERVICES_KEY			"\\Registry\\Machine\\System\\CurrentControlSet\\Services\\PowerVR\\"
 
-	return PVRSRV_OK;
-}
+#define PVRSRV_REGISTRY_ROOT			POWERVR_EURASIA_KEY "HWSettings\\PVRSRVKM"
 
-#ifdef INLINE_IS_PRAGMA
-#pragma inline(OSPerProcessPrivateDataDeInit)
-#endif
-static INLINE PVRSRV_ERROR OSPerProcessPrivateDataDeInit(IMG_HANDLE hOsPrivateData)
-{
-	PVR_UNREFERENCED_PARAMETER(hOsPrivateData);
 
-	return PVRSRV_OK;
-}
+#define MAX_REG_STRING_SIZE 128
 
-#ifdef INLINE_IS_PRAGMA
-#pragma inline(OSPerProcessSetHandleOptions)
-#endif
-static INLINE PVRSRV_ERROR OSPerProcessSetHandleOptions(PVRSRV_HANDLE_BASE *psHandleBase)
-{
-	PVR_UNREFERENCED_PARAMETER(psHandleBase);
-
-	return PVRSRV_OK;
-}
-#endif	
-
-#if defined (__cplusplus)
-}
-#endif
 
 #endif 
-
