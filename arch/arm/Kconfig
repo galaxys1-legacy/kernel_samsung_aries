@@ -32,6 +32,7 @@ config ARM
 	select HAVE_C_RECORDMCOUNT
 	select HAVE_GENERIC_HARDIRQS
 	select HAVE_SPARSE_IRQ
+	select SECCOMP_FILTER
 	select GENERIC_IRQ_SHOW
 	select HAVE_BPF_JIT
 	help
