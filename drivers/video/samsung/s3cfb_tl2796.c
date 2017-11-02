@@ -43,7 +43,7 @@
 
 #define NUM_GAMMA_REGS	21
 
-#ifndef CONFIG_FB_VOODOO
+#ifndef U32_MAX
 #define U32_MAX (~(u32)0)
 #endif
 
@@ -1274,7 +1274,7 @@ static int __devinit tl2796_probe(struct spi_device *spi)
 		debugfs_create_file("current_gamma", S_IRUGO,
 			lcd->debug_dir, lcd, &tl2796_current_gamma_fops);
 
-	
+
 #ifdef CONFIG_FB_VOODOO
 	misc_register(&voodoo_color_device);
 	if (sysfs_create_group(&voodoo_color_device.this_device->kobj, &voodoo_color_group) < 0)
